@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "shamefile"
+version = "0.1.0"
+description = "A cli tool to enforce documentation for code suppressions"
+authors = [
+    {name = "Bartlomiej Flis", email = "bartekdawidflis@gmail.com"},
+]
+readme = "README.md"
+requires-python = ">=3.7"
+dependencies = []
+
+[tool.maturin]
+features = [] # No python bindings features needed for pure binary
+bindings = "bin" # Ensure we build the binary, not a lib
+strip = true 
