@@ -24,10 +24,5 @@
   <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript">
 </p>
 
-> [!IMPORTANT]
 > ### Whether it's your fault or linter's — it should be f\*ing documented!
 
-<p align="center">
-  A gamified CLI that scans your codebase for lint suppressions (<code># noqa</code>, <code>// eslint-disable</code>, <code>// @ts-ignore</code>, …)<br>
-  and forces every single one to be justified in a central <code>shamefile.yaml</code> registry.
-</p>
