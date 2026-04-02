@@ -11,7 +11,9 @@ authors = [
 ]
 readme = "README.md"
 requires-python = ">=3.7"
-dependencies = []
+dependencies = [
+    "pre-commit>=2.21.0",
+]
 
 [tool.maturin]
 features = [] # No python bindings features needed for pure binary

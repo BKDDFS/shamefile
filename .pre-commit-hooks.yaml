@@ -1,0 +1,6 @@
+- id: shamefile
+  name: shamefile
+  entry: shame me . --dry-run
+  language: rust
+  pass_filenames: false
+  always_run: true

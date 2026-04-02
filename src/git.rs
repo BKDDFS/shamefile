@@ -5,7 +5,7 @@ use std::process::Command;
 pub fn get_git_author() -> String {
     let name = get_git_config("user.name").unwrap_or_else(|| "Unknown".to_string());
     let email = get_git_config("user.email").unwrap_or_else(|| "unknown@example.com".to_string());
-    
+
     if name == "Unknown" && email == "unknown@example.com" {
         return "Unknown".to_string();
     }

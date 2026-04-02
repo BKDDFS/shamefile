@@ -1,10 +1,10 @@
 [package]
-name = "shame"
+name = "shamefile"
 version = "0.1.0"
 edition = "2024"
 
 [[bin]]
-name = "shame"
+name = "shamefile"
 path = "src/main.rs"
 
 [lib]
@@ -22,3 +22,6 @@ regex-syntax = "0.8.9"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml = "0.9.34"
 thiserror = "2.0.18"
+
+[dev-dependencies]
+tempfile = "3"

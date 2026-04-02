@@ -1,22 +1,42 @@
 use regex_syntax;
 
-/// The list of tokens that we search for in the codebase.
-/// These are currently hardcoded as per the design requirements.
 pub const TRACKED_TOKENS: &[&str] = &[
-    "# noqa",
-    "# NOSONAR",
-    "# pragma: no cover",
-    "// pylint: disable",
-    "// eslint-disable",
-    "// tslint:disable",
-    "// @ts-ignore",
-    "// @ts-expect-error",
+    // Any
+    "NOSONAR",   // SonarQube / SonarCloud
+    "nosemgrep", // Semgrep
+    // Python
+    "# noqa",             // Flake8 / Ruff
+    "# pylint: disable",  // Pylint
+    "# type: ignore",     // Mypy
+    "# pyright: ignore",  // Pyright
+    "# pytype: disable",  // Pytype
+    "# pyre-ignore",      // Pyre
+    "# pyre-fixme",       // Pyre
+    "# nosec",            // Bandit
+    "# pragma: no cover", // Coverage.py
+    "# fmt: off",         // Black / Ruff
+    "# fmt: skip",        // Black / Ruff
+    "# isort: skip",      // isort
+    "# lint-fixme",       // Fixit
+    "# lint-ignore",      // Fixit
+    "# autopep8: off",    // autopep8
+    // Rust
+    "#[allow(",         // Clippy / rustc
+    "#[rustfmt::skip]", // rustfmt
+    // JavaScript
+    "// eslint-disable", // ESLint
+    "// tslint:disable", // TSLint
+    // TypeScript
+    "// @ts-ignore",       // TypeScript
+    "// @ts-expect-error", // TypeScript
 ];
 
 /// Returns the regex pattern to search for any of these tokens.
-/// This constructs a pattern like `(# noqa|# NOSONAR|...)` for use with grep.
 pub fn get_token_regex() -> String {
-    let patterns: Vec<String> = TRACKED_TOKENS.iter().map(|&t| regex_syntax::escape(t)).collect();
+    let patterns: Vec<String> = TRACKED_TOKENS
+        .iter()
+        .map(|&t| regex_syntax::escape(t))
+        .collect();
     format!("({})", patterns.join("|"))
 }
 

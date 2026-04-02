@@ -1,3 +1,13 @@
 target/
 shamefile.yaml
 test.py
+.claude/
+.idea/
+examples/
+WIP.md
+
+# Python / uv
+/venv
+__pycache__/
+*.pyc
+uv.lock

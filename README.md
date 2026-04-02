@@ -69,7 +69,6 @@ entries:
 | Flag | Description |
 |------|-------------|
 | `--dry-run` (`-n`) | Read-only validation for CI/CD — never writes to disk |
-| `--boring` (`-b`) | Professional output without gamification or emojis |
 
 ## Workflow
 
@@ -84,14 +83,10 @@ result = parse(raw_input)  # noqa: E501
 ```bash
 $ shame me .
 
-🎮 Code Health: ████████████████████░ 987/1000 HP
+New suppression detected: # noqa at src/parser.py:42
+Missing reason (why): # noqa at src/parser.py:42
 
-✗ Found 1 new suppression:
-  + # noqa at src/parser.py:42
-
-Added to registry without reason why.
-
-✗ Validation failed! Add justifications to shamefile.yaml
+Validation failed! Please add reasons (why) to shamefile.yaml
 ```
 
 **3. You open `shamefile.yaml` and fill in the `why`:**
@@ -111,11 +106,7 @@ entries:
 ```bash
 $ shame me .
 
-🎮 Code Health: ████████████████████░ 987/1000 HP
-
-💚 EXCELLENT! No shame today!
-
-✓ All suppressions are documented!
+Validation passed. No shame today!
 ```
 
 In CI, use `--dry-run` to validate without modifying the registry:
@@ -142,18 +133,7 @@ Or as a [pre-commit](https://pre-commit.com) hook:
     - id: shamefile
 ```
 
-## Configuration
 
-The `shamefile.yaml` config section controls tool behavior:
-
-```yaml
-config:
-  max_suppressions: 1000
-```
-
-| Parameter | Default | Description |
-|-----------|---------|-------------|
-| `max_suppressions` | `1000` | Maximum number of allowed suppressions. When your codebase exceeds this limit, `shame` will block further suppressions and declare **LEGACY HELL**. Lower it over time to force cleanup. |
 
 ## Supported tokens
 

@@ -1,57 +1,137 @@
-use std::process::Command;
 use std::fs;
-use std::path::Path;
+use std::process::Command;
 
 fn get_binary_path() -> std::path::PathBuf {
-    // A heuristic to find the built binary. 
-    // In strict environments, we might want to use `cargo_bin_path` from `assert_cmd` crate,
-    // but for now, let's assume `cargo test` builds it in `target/debug`.
     let mut path = std::env::current_dir().unwrap();
     path.push("target");
     path.push("debug");
-    path.push("shamefile");
+    path.push("shame");
     path
 }
 
-#[test]
-fn test_check_detects_violations() {
-    // 1. Setup a clean test environment (temp dir would be better but simple works too)
-    let fixture_path = "tests/fixtures";
-    let config_path = "tests/fixtures/shamefile.yaml";
-    
-    // Cleanup previous run
-    if Path::new(config_path).exists() {
-        fs::remove_file(config_path).unwrap();
-    }
-
-    // 2. Run `shamefile check tests/fixtures --config tests/fixtures/shamefile.yaml`
-    let output = Command::new(get_binary_path())
-        .arg("check")
-        .arg(fixture_path)
-        .arg("--config")
-        .arg(config_path)
-        .output()
-        .expect("Failed to execute shamefile");
-
-    // 3. Verify output
-    assert!(!output.status.success(), "Check should fail because justifications are missing");
-    let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("New suppression detected"), "Should report new suppressions");
-    assert!(stdout.contains("Validation failed"), "Should report validation failure");
-    
-    // 4. Verify file creation
-    assert!(Path::new(config_path).exists(), "Should create registry file");
-    
-    let content = fs::read_to_string(config_path).unwrap();
-    assert!(content.contains("# noqa"), "Registry should contain python token");
-    assert!(content.contains("// eslint-disable"), "Registry should contain JS token");
-
-    // Cleanup
-    fs::remove_file(config_path).unwrap();
+/// Create a temp dir with copies of fixture files for isolated testing.
+fn setup_temp_fixtures() -> tempfile::TempDir {
+    let tmp = tempfile::tempdir().unwrap();
+    fs::copy("tests/fixtures/sample.py", tmp.path().join("sample.py")).unwrap();
+    fs::copy("tests/fixtures/sample.js", tmp.path().join("sample.js")).unwrap();
+    tmp
 }
 
 #[test]
-fn test_clean_removes_stale_entries() {
-    // This requires more setup (creating a dummy file, scanning it, deleting it, running clean).
-    // Skipping for brevity in this step, but follows similar pattern.
+fn test_me_detects_new_suppressions() {
+    let tmp = setup_temp_fixtures();
+    let dir = tmp.path();
+    let config_path = dir.join("shamefile.yaml");
+
+    let output = Command::new(get_binary_path())
+        .arg("me")
+        .arg(dir)
+        .output()
+        .expect("Failed to execute shame");
+
+    // Should fail because justifications are missing
+    assert!(
+        !output.status.success(),
+        "Should fail because justifications are missing"
+    );
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        stdout.contains("New suppression detected"),
+        "Should report new suppressions: {stdout}"
+    );
+    assert!(
+        stdout.contains("Validation failed"),
+        "Should report validation failure: {stdout}"
+    );
+
+    // Should create registry file
+    assert!(config_path.exists(), "Should create registry file");
+
+    let content = fs::read_to_string(&config_path).unwrap();
+    assert!(
+        content.contains("# noqa"),
+        "Registry should contain python token"
+    );
+    assert!(
+        content.contains("// eslint-disable"),
+        "Registry should contain JS token"
+    );
+}
+
+#[test]
+fn test_dry_run_fails_without_registry() {
+    let tmp = setup_temp_fixtures();
+    let dir = tmp.path();
+
+    let output = Command::new(get_binary_path())
+        .arg("me")
+        .arg(dir)
+        .arg("--dry-run")
+        .output()
+        .expect("Failed to execute shame");
+
+    assert!(
+        !output.status.success(),
+        "Dry-run should fail when no registry exists"
+    );
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr.contains("Registry not found"),
+        "Should report missing registry: {stderr}"
+    );
+}
+
+#[test]
+fn test_dry_run_validates_existing_registry() {
+    let tmp = setup_temp_fixtures();
+    let dir = tmp.path();
+
+    // Create registry via normal mode first
+    Command::new(get_binary_path())
+        .arg("me")
+        .arg(dir)
+        .output()
+        .expect("Failed to execute shame");
+
+    // Now dry-run should fail (entries have no justifications)
+    let output = Command::new(get_binary_path())
+        .arg("me")
+        .arg(dir)
+        .arg("--dry-run")
+        .output()
+        .expect("Failed to execute shame");
+
+    assert!(
+        !output.status.success(),
+        "Dry-run should fail with missing justifications"
+    );
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        stdout.contains("without reason"),
+        "Should report missing reasons: {stdout}"
+    );
+}
+
+#[test]
+fn test_short_flag_n_for_dry_run() {
+    let tmp = setup_temp_fixtures();
+    let dir = tmp.path();
+
+    // -n without registry should fail the same as --dry-run
+    let output = Command::new(get_binary_path())
+        .arg("me")
+        .arg(dir)
+        .arg("-n")
+        .output()
+        .expect("Failed to execute shame");
+
+    assert!(
+        !output.status.success(),
+        "-n should fail when no registry exists"
+    );
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(
+        stderr.contains("Registry not found"),
+        "-n should behave like --dry-run: {stderr}"
+    );
 }
