@@ -1,5 +1,5 @@
 <h1 align="center">
-  <img src="assets/logo.png" alt="shame-file logo" width="300">
+  <img src="assets/logo.png" alt="shamefile logo" width="300">
 </h1>
 
 <p align="center">

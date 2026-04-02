@@ -1,4 +1,4 @@
-# shame - Implementation Design
+# shamefile - Implementation Design
 
 A tool for enforcing documentation of code suppressions.
 
@@ -292,7 +292,7 @@ shame me --db sqlite  # For mega-scale repos (>100K suppressions)
 
 ## Summary
 
-**`shame`** is a suppression registry tool that:
+**`shamefile`** is a suppression registry tool that:
 - Enforces **documentation** of all code suppressions
 - Provides **strict validation** (multi-step check)
 - Supports **CI/CD** (`--dry-run` mode)

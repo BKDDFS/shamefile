@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**shame** is a CLI tool that enforces documentation of code suppressions (e.g., `# noqa`, `// eslint-disable`, `// @ts-ignore`). It scans codebases for suppression tokens and maintains a central `shamefile.yaml` registry requiring justifications for each suppression. See [DESIGN.md](DESIGN.md) for the full design document.
+**shamefile** is a CLI tool that enforces documentation of code suppressions (e.g., `# noqa`, `// eslint-disable`, `// @ts-ignore`). It scans codebases for suppression tokens and maintains a central `shamefile.yaml` registry requiring justifications for each suppression. See [DESIGN.md](DESIGN.md) for the full design document.
 
 ## Build and Development
 
