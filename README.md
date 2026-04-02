@@ -81,8 +81,9 @@ This tool is designed to prevent "silent technical debt" from entering your repo
    - **Coverage**: Every suppression in the code is registered in the yaml.
    - **Staleness**: There are no "orphan" suppressions in the yaml that were already removed from the code.
    - **Justifications**: Every registered suppression has a documented reason.
+5. **The Code Review**: Reviewers no longer have to hunt for mysterious `// nolint` comments scattered across dozens of files. All new technical debt is consolidated in a single diff against `shamefile.yaml`. They can easily see the requested shortcut and read the plain-text justification, drastically lowering the cognitive threshold to challenge, discuss, or reject it.
    
-If everything matches, the pipeline passes, and the code merges. Technical debt is now isolated, visible, and explicitly justified.
+If everything matches and reviewers agree with the justifications, the pipeline passes, and the code merges. Technical debt is now isolated, visible, and explicitly justified.
 
 ## Workflow
 
