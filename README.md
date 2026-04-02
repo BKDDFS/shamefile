@@ -70,6 +70,20 @@ entries:
 |------|-------------|
 | `--dry-run` (`-n`) | Read-only validation for CI/CD — never writes to disk |
 
+## End-to-End Lifecycle
+
+This tool is designed to prevent "silent technical debt" from entering your repository. Here is the theoretical E2E lifecycle of a code suppression:
+
+1. **The Shortcut**: A developer writes code and encounters a linter error they can't immediately fix (e.g., a TypeScript error due to a legacy API). They add a suppression token like `// @ts-ignore`.
+2. **The Catch (Local or Pre-commit)**: Before committing, the developer runs `shame me .` (or a git hook runs it). The tool scans the code, finds the new suppression, and adds it to the central `shamefile.yaml`. However, it throws a validation error because the developer hasn't justified the suppression yet (the `why` field is empty).
+3. **The Justification ("Shame")**: The developer must open the `shamefile.yaml` and manually write a human-readable reason in the `why: ""` field, explaining exactly *why* this suppression is necessary.
+4. **The CI/CD Gate**: The developer commits both the code and the updated `shamefile.yaml` and opens a Pull Request. On the CI server, `shame me . --dry-run` is executed. It validates that:
+   - **Coverage**: Every suppression in the code is registered in the yaml.
+   - **Staleness**: There are no "orphan" suppressions in the yaml that were already removed from the code.
+   - **Justifications**: Every registered suppression has a documented reason.
+   
+If everything matches, the pipeline passes, and the code merges. Technical debt is now isolated, visible, and explicitly justified.
+
 ## Workflow
 
 **1. You add a suppression to your code:**
