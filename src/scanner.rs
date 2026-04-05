@@ -39,18 +39,17 @@ pub fn scan(root_path: &Path) -> Result<Vec<Violation>, ShamefileError> {
             // Optimization: We could use `matcher` to find the match within `line`,
             // but simple string contains is fast enough for the sink callback since regex already confirmed a match.
 
-            let token = crate::tokens::TRACKED_TOKENS
+            for token in crate::tokens::TRACKED_TOKENS
                 .iter()
-                .find(|&&t| line.contains(t))
-                .unwrap_or(&"UNKNOWN")
-                .to_string();
-
-            violations.push(Violation {
-                path: path.to_path_buf(),
-                line_number: lnum as u32,
-                line_content: line.to_string(),
-                matched_token: token,
-            });
+                .filter(|&&t| line.contains(t))
+            {
+                violations.push(Violation {
+                    path: path.to_path_buf(),
+                    line_number: lnum as u32,
+                    line_content: line.to_string(),
+                    matched_token: token.to_string(),
+                });
+            }
             Ok(true)
         });
 
