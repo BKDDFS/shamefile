@@ -188,3 +188,66 @@ def test_gitignored_file_entries_become_stale(tmp_path):
 
     assert "Removing stale entry" in result.stdout
     assert "# noqa" not in registry.read_text()
+
+
+def test_different_tokens_same_line_independent_entries(tmp_path):
+    """Different tokens on same line should be separate entries with independent why."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa  # type: ignore\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+
+    import yaml
+
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    tokens = {e["token"] for e in entries}
+
+    assert len(entries) == 2
+    assert "# noqa" in tokens
+    assert "# type: ignore" in tokens
+
+
+def test_stale_removed_and_new_added_same_run(tmp_path):
+    """Removing one file and adding another in same run should handle both correctly."""
+    file_a = tmp_path / "a.py"
+    file_b = tmp_path / "b.py"
+    file_a.write_text("x = 1  # noqa\n")
+    file_b.write_text("y = 2  # type: ignore\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+
+    # Remove a.py, add c.py
+    file_a.unlink()
+    file_c = tmp_path / "c.py"
+    file_c.write_text("z = 3  # nosec\n")
+
+    result = run_shamefile(str(tmp_path))
+
+    registry_content = registry.read_text()
+    assert "# noqa" not in registry_content
+    assert "# type: ignore" in registry_content
+    assert "# nosec" in registry_content
+    assert "Removing stale entry" in result.stdout
+    assert "New suppression detected" in result.stdout
+
+
+def test_multiple_stale_entries_removed_at_once(tmp_path):
+    """Multiple stale entries should all be removed in one run."""
+    (tmp_path / "a.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "b.py").write_text("y = 2  # type: ignore\n")
+    (tmp_path / "c.py").write_text("z = 3  # nosec\n")
+
+    run_shamefile(str(tmp_path))
+
+    # Remove all suppression files, add clean file
+    (tmp_path / "a.py").unlink()
+    (tmp_path / "b.py").unlink()
+    (tmp_path / "c.py").unlink()
+    (tmp_path / "clean.py").write_text("x = 1\n")
+
+    result = run_shamefile(str(tmp_path))
+
+    assert result.stdout.count("Removing stale entry") == 3
+    assert result.returncode == 0

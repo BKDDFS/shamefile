@@ -128,3 +128,148 @@ def test_line_shift_and_content_change_reports_unmatched(tmp_path):
     registry = yaml.safe_load(registry_path.read_text())
     assert any(e["why"] == "Legacy code" for e in registry["entries"])
     assert "algorithmic matching failed" in result.stdout
+
+
+@pytest.fixture
+def two_entries_shifted(tmp_path):
+    """Create two entries, shift both lines, rerun, return (originals, updated)."""
+    import subprocess
+
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "alice@test.com"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\ny = 2  # type: ignore\n")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True
+    )
+
+    run_shamefile(str(tmp_path))
+    registry_path = tmp_path / "shamefile.yaml"
+    content = registry_path.read_text()
+    content = content.replace("why: ''", "why: 'Justified'")
+    registry_path.write_text(content)
+
+    originals = yaml.safe_load(registry_path.read_text())["entries"]
+
+    # Add blank line at top — both shift by 1
+    test_file.write_text("\nx = 1  # noqa\ny = 2  # type: ignore\n")
+    run_shamefile(str(tmp_path))
+
+    updated = yaml.safe_load(registry_path.read_text())["entries"]
+    return originals, updated
+
+
+@pytest.mark.xfail(reason=XFAIL_MATCHING)
+def test_multiple_entries_shift_simultaneously(two_entries_shifted):
+    """Multiple entries shifting at once should all preserve why."""
+    _, updated = two_entries_shifted
+    assert all(e["why"] == "Justified" for e in updated)
+
+
+@pytest.mark.xfail(reason=XFAIL_MATCHING)
+def test_one_shifts_one_stays(tmp_path):
+    """One entry shifts, another stays — both should preserve why."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n\ny = 2  # type: ignore\n")
+    registry_path = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+    content = registry_path.read_text()
+    registry_path.write_text(content.replace("why: ''", "why: 'Justified'"))
+
+    # Insert line between them — only second shifts
+    test_file.write_text("x = 1  # noqa\nnew line\n\ny = 2  # type: ignore\n")
+
+    run_shamefile(str(tmp_path))
+
+    registry = yaml.safe_load(registry_path.read_text())
+    assert all(e["why"] == "Justified" for e in registry["entries"])
+
+
+@pytest.mark.xfail(reason=XFAIL_MATCHING)
+def test_large_line_shift(tmp_path):
+    """Suppression shifting by many lines should still preserve why."""
+    import subprocess
+
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "alice@test.com"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True
+    )
+
+    run_shamefile(str(tmp_path))
+    registry_path = tmp_path / "shamefile.yaml"
+    content = registry_path.read_text()
+    registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
+
+    # Shift by 20 lines
+    test_file.write_text("\n" * 20 + "x = 1  # noqa\n")
+
+    run_shamefile(str(tmp_path))
+
+    registry = yaml.safe_load(registry_path.read_text())
+    entry = registry["entries"][0]
+
+    assert entry["why"] == "Legacy code"
+
+
+@pytest.mark.xfail(reason=XFAIL_MATCHING)
+def test_file_rename_preserves_why(tmp_path):
+    """Renaming a file should preserve why (content hash matches across files)."""
+    test_file = tmp_path / "utils.py"
+    test_file.write_text("x = 1  # noqa\n")
+    registry_path = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+    content = registry_path.read_text()
+    registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
+    test_file.rename(tmp_path / "helpers.py")
+
+    run_shamefile(str(tmp_path))
+
+    registry = yaml.safe_load(registry_path.read_text())
+    entry = registry["entries"][0]
+
+    assert entry["why"] == "Legacy code"
+    assert "helpers.py" in entry["location"]
+
+
+@pytest.mark.xfail(reason=XFAIL_MATCHING)
+def test_file_rename_plus_content_change_reports_unmatched(tmp_path):
+    """Renaming file + changing content = unmatched, tool should not auto-remove."""
+    test_file = tmp_path / "utils.py"
+    test_file.write_text("x = 1  # noqa\n")
+    registry_path = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+    content = registry_path.read_text()
+    registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
+    test_file.unlink()
+    (tmp_path / "helpers.py").write_text("y = calculate()  # noqa\n")
+
+    result = run_shamefile(str(tmp_path))
+
+    # Old entry should NOT be auto-removed
+    registry = yaml.safe_load(registry_path.read_text())
+    assert any(e["why"] == "Legacy code" for e in registry["entries"])
+    assert "algorithmic matching failed" in result.stdout
