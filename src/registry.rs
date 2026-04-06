@@ -20,16 +20,34 @@ pub struct Config {}
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Entry {
-    pub file: String,
-    pub line: u32,
+    pub location: String,
     pub token: String,
 
-    pub author: String,
+    pub owner: String,
     pub created_at: DateTime<Utc>,
 
     /// The reason why this suppression exists.
     /// If empty, it means justification is missing.
     pub why: String,
+}
+
+impl Entry {
+    pub fn file(&self) -> &str {
+        self.location
+            .rsplit_once(':')
+            .map_or(&self.location, |(f, _)| f)
+    }
+
+    pub fn line(&self) -> u32 {
+        self.location
+            .rsplit_once(':')
+            .and_then(|(_, l)| l.parse().ok())
+            .unwrap_or(0)
+    }
+
+    pub fn make_location(file: &str, line: u32) -> String {
+        format!("{}:{}", file, line)
+    }
 }
 
 impl Default for Registry {

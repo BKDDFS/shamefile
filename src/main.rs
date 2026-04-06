@@ -17,7 +17,7 @@ struct Cli {
 enum Commands {
     /// Scan for suppressions, sync registry, and validate
     Me {
-        /// Path to scan (file or directory)
+        /// Directory to scan
         #[arg(default_value = ".")]
         path: PathBuf,
 
@@ -39,6 +39,14 @@ fn main() -> Result<()> {
 }
 
 fn handle_me(scan_path: &Path, dry_run: bool) -> Result<()> {
+    if scan_path.is_file() {
+        eprintln!(
+            "Error: PATH must be a directory, got a file: {}",
+            scan_path.display()
+        );
+        std::process::exit(1);
+    }
+
     let config_path = scan_path.join("shamefile.yaml");
 
     if dry_run {
@@ -50,11 +58,12 @@ fn handle_me(scan_path: &Path, dry_run: bool) -> Result<()> {
 
 fn handle_normal(scan_path: &Path, config_path: &Path) -> Result<()> {
     // 1. Load or create registry
-    let mut registry = if config_path.exists() {
-        Registry::load(config_path).context("Failed to load registry")?
-    } else {
+    let is_first_run = !config_path.exists();
+    let mut registry = if is_first_run {
         println!("Creating new registry at {}", config_path.display());
         Registry::new()
+    } else {
+        Registry::load(config_path).context("Failed to load registry")?
     };
 
     // 2. Scan for violations (exclude shamefile.yaml itself)
@@ -73,11 +82,12 @@ fn handle_normal(scan_path: &Path, config_path: &Path) -> Result<()> {
     for violation in &violations {
         let violation_path_str = violation.path.to_string_lossy().to_string();
 
-        let existing = registry.entries.iter().find(|e| {
-            e.file == violation_path_str
-                && e.line == violation.line_number
-                && e.token == violation.matched_token
-        });
+        let violation_location = Entry::make_location(&violation_path_str, violation.line_number);
+
+        let existing = registry
+            .entries
+            .iter()
+            .find(|e| e.location == violation_location && e.token == violation.matched_token);
 
         if let Some(entry) = existing {
             if entry.why.trim().is_empty() {
@@ -89,10 +99,18 @@ fn handle_normal(scan_path: &Path, config_path: &Path) -> Result<()> {
                 violation.matched_token, violation_path_str, violation.line_number
             );
             registry.entries.push(Entry {
-                file: violation_path_str,
-                line: violation.line_number,
+                location: violation_location,
                 token: violation.matched_token.clone(),
-                author: shamefile::git::get_git_author(),
+                owner: if is_first_run {
+                    shamefile::git::get_git_blame_author(
+                        &violation_path_str,
+                        violation.line_number,
+                        scan_path,
+                    )
+                    .unwrap_or_else(|| shamefile::git::get_git_current_user(scan_path))
+                } else {
+                    shamefile::git::get_git_current_user(scan_path)
+                },
                 created_at: Utc::now(),
                 why: String::new(),
             });
@@ -105,14 +123,13 @@ fn handle_normal(scan_path: &Path, config_path: &Path) -> Result<()> {
     let initial_count = registry.entries.len();
     registry.entries.retain(|entry| {
         let is_valid = violations.iter().any(|v| {
-            v.path.to_string_lossy() == entry.file
-                && v.line_number == entry.line
-                && v.matched_token == entry.token
+            let loc = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
+            loc == entry.location && v.matched_token == entry.token
         });
         if !is_valid {
             println!(
-                "Removing stale entry: {} at {}:{}",
-                entry.token, entry.file, entry.line
+                "Removing stale entry: {} at {}",
+                entry.token, entry.location
             );
         }
         is_valid
@@ -129,8 +146,8 @@ fn handle_normal(scan_path: &Path, config_path: &Path) -> Result<()> {
     if !missing_why.is_empty() {
         for entry in &missing_why {
             println!(
-                "Missing reason (why): {} at {}:{}",
-                entry.token, entry.file, entry.line
+                "Missing reason (why): {} at {}",
+                entry.token, entry.location
             );
         }
         errors_found = true;
@@ -199,10 +216,11 @@ fn handle_dry_run(scan_path: &Path, config_path: &Path) -> Result<()> {
     let undocumented: Vec<_> = violations
         .iter()
         .filter(|v| {
-            let vpath = v.path.to_string_lossy();
-            !registry.entries.iter().any(|e| {
-                e.file == vpath.as_ref() && e.line == v.line_number && e.token == v.matched_token
-            })
+            let loc = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
+            !registry
+                .entries
+                .iter()
+                .any(|e| e.location == loc && e.token == v.matched_token)
         })
         .collect();
 
@@ -231,9 +249,8 @@ fn handle_dry_run(scan_path: &Path, config_path: &Path) -> Result<()> {
         .iter()
         .filter(|e| {
             !violations.iter().any(|v| {
-                v.path.to_string_lossy() == e.file
-                    && v.line_number == e.line
-                    && v.matched_token == e.token
+                let loc = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
+                loc == e.location && v.matched_token == e.token
             })
         })
         .collect();
@@ -243,10 +260,7 @@ fn handle_dry_run(scan_path: &Path, config_path: &Path) -> Result<()> {
     } else {
         println!("FAIL: Found {} stale entries:", stale.len());
         for e in &stale {
-            println!(
-                "  - {} at {}:{} (not in code anymore)",
-                e.token, e.file, e.line
-            );
+            println!("  - {} at {} (not in code anymore)", e.token, e.location);
         }
         failed = true;
     }
@@ -267,7 +281,7 @@ fn handle_dry_run(scan_path: &Path, config_path: &Path) -> Result<()> {
             missing_why.len()
         );
         for e in &missing_why {
-            println!("  - {} at {}:{}", e.token, e.file, e.line);
+            println!("  - {} at {}", e.token, e.location);
         }
         failed = true;
     }
