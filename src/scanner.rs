@@ -54,11 +54,7 @@ pub fn scan(root_path: &Path) -> Result<Vec<Violation>, ShamefileError> {
         });
 
         if let Err(e) = searcher.search_path(&matcher, path, sink) {
-            // We ignore IO errors for individual files to keep scanning others?
-            // Or return error? For a linter, usually we want to know if we can't read a file.
-            // But let's just log it or wrap it.
-            // For now, let's propagate as IO Error via ScanError
-            return Err(ShamefileError::ScanError(e));
+            eprintln!("Warning: skipping {}: {}", path.display(), e);
         }
     }
 
