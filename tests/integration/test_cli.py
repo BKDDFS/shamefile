@@ -51,6 +51,21 @@ def test_shamefile_created_at_git_root(tmp_path):
     assert not (src / "shamefile.yaml").exists()
 
 
+@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
+def test_shamefile_created_in_cwd_without_git(tmp_path):
+    """Without a git repo, shamefile.yaml should be created in CWD."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "test.py").write_text("x = 1  # noqa\n")
+
+    subprocess.run(
+        [BINARY_PATH, "me", "src"], capture_output=True, text=True, cwd=tmp_path
+    )
+
+    assert (tmp_path / "shamefile.yaml").exists()
+    assert not (src / "shamefile.yaml").exists()
+
+
 def test_no_path_defaults_to_current_directory(tmp_path):
     """'shame me' without path should default to scanning current directory."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
