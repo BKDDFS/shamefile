@@ -66,3 +66,25 @@ def test_unsorted_lines_get_sorted_within_file(tmp_path):
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert entries[0]["location"].endswith(":1")
     assert entries[1]["location"].endswith(":3")
+
+
+@pytest.mark.xfail(reason=XFAIL_ORDERING)
+def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
+    """Multiple tokens on same line should be sorted alphabetically by token."""
+    (tmp_path / "test.py").write_text("x = 1  # type: ignore  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    # Manually create registry with # type: ignore before # noqa
+    write_registry(
+        registry,
+        [
+            make_entry(f"{tmp_path}/test.py:1", token="# type: ignore", why="reason ti"),
+            make_entry(f"{tmp_path}/test.py:1", token="# noqa", why="reason noqa"),
+        ],
+    )
+
+    run_shamefile(str(tmp_path))
+
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    tokens = [e["token"] for e in entries]
+    assert tokens == sorted(tokens)
