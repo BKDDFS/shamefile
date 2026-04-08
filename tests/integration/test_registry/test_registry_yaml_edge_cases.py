@@ -62,3 +62,23 @@ def test_why_null_treated_as_empty(tmp_path):
     result = run_shamefile(str(tmp_path))
 
     assert result.returncode == 1
+
+
+def test_why_with_yaml_special_chars(tmp_path):
+    """Why containing YAML special characters should survive rerun."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+
+    special_why = 'reason: see ticket #123 & "fix"'
+    data = yaml.safe_load(registry.read_text())
+    data["entries"][0]["why"] = special_why
+    registry.write_text(yaml.dump(data, default_flow_style=False, allow_unicode=True))
+
+    result = run_shamefile(str(tmp_path))
+
+    assert result.returncode == 0
+    entry = yaml.safe_load(registry.read_text())["entries"][0]
+    assert entry["why"] == special_why
