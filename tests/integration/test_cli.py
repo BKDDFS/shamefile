@@ -88,6 +88,26 @@ def test_scan_path_scopes_what_is_scanned(tmp_path):
     assert "# noqa" in entries[0]["token"]
 
 
+@pytest.mark.xfail(reason="single file path is rejected, should scan the file and use git root/CWD for registry")
+def test_single_file_path_scans_that_file(tmp_path):
+    """'shame me src/app.py' should scan that single file."""
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("x = 1  # noqa\n")
+    (src / "utils.py").write_text("y = 2  # type: ignore\n")
+
+    result = subprocess.run(
+        [BINARY_PATH, "me", "src/app.py"], capture_output=True, text=True, cwd=tmp_path
+    )
+
+    assert result.returncode == 1
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry["entries"]
+    assert len(entries) == 1
+    assert "# noqa" in entries[0]["token"]
+
+
 def test_no_path_defaults_to_current_directory(tmp_path):
     """'shame me' without path should default to scanning current directory."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
