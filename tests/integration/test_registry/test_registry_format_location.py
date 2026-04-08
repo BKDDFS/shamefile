@@ -44,3 +44,18 @@ def test_entry_location_with_spaces_in_path(tmp_path):
     entry = registry["entries"][0]
 
     assert "my project/sub dir/my file.py:1" in entry["location"]
+
+
+def test_entry_location_with_colon_in_path(tmp_path):
+    """Location should handle colons in directory names (rsplit_once splits on last colon)."""
+    colon_dir = tmp_path / "src" / "foo:bar"
+    colon_dir.mkdir(parents=True)
+    test_file = colon_dir / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+
+    run_shamefile(str(tmp_path))
+
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entry = registry["entries"][0]
+
+    assert "src/foo:bar/test.py:1" in entry["location"]
