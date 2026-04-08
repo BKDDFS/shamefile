@@ -82,3 +82,25 @@ def test_why_with_yaml_special_chars(tmp_path):
     assert result.returncode == 0
     entry = yaml.safe_load(registry.read_text())["entries"][0]
     assert entry["why"] == special_why
+
+
+def test_extra_fields_in_entry_stripped(tmp_path):
+    """Unknown fields added manually to an entry are silently removed by serde on rerun."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+
+    data = yaml.safe_load(registry.read_text())
+    data["entries"][0]["why"] = "Legacy code"
+    data["entries"][0]["ticket"] = "JIRA-123"
+    data["entries"][0]["reviewer"] = "Alice"
+    registry.write_text(yaml.dump(data, default_flow_style=False, allow_unicode=True))
+
+    run_shamefile(str(tmp_path))
+
+    entry = yaml.safe_load(registry.read_text())["entries"][0]
+    assert entry["why"] == "Legacy code"
+    assert "ticket" not in entry
+    assert "reviewer" not in entry
