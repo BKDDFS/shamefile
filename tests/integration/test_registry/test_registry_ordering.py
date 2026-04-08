@@ -44,3 +44,25 @@ def test_unsorted_entries_get_sorted_by_file(tmp_path):
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert "a.py" in entries[0]["location"]
     assert "z.py" in entries[1]["location"]
+
+
+@pytest.mark.xfail(reason=XFAIL_ORDERING)
+def test_unsorted_lines_get_sorted_within_file(tmp_path):
+    """Entries with lines in wrong order should be sorted after rerun."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\ny = 2\nz = 3  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    # Manually create registry with line 3 before line 1
+    write_registry(
+        registry,
+        [
+            make_entry(f"{tmp_path}/test.py:3", why="reason 3"),
+            make_entry(f"{tmp_path}/test.py:1", why="reason 1"),
+        ],
+    )
+
+    run_shamefile(str(tmp_path))
+
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    assert entries[0]["location"].endswith(":1")
+    assert entries[1]["location"].endswith(":3")
