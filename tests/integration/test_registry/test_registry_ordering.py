@@ -1,9 +1,6 @@
-import pytest
 import yaml
 
 from conftest import run_shamefile
-
-XFAIL_ORDERING = "entry ordering not yet implemented"
 
 
 def make_entry(location, token="# noqa", why="", owner="Test <test@test.com>"):
@@ -23,7 +20,7 @@ def write_registry(path, entries):
     path.write_text(yaml.dump(data, default_flow_style=False, allow_unicode=True))
 
 
-@pytest.mark.xfail(reason=XFAIL_ORDERING)
+
 def test_unsorted_entries_get_sorted_by_file(tmp_path):
     """Entries in wrong file order should be sorted after rerun."""
     (tmp_path / "a.py").write_text("x = 1  # noqa\n")
@@ -46,7 +43,7 @@ def test_unsorted_entries_get_sorted_by_file(tmp_path):
     assert "z.py" in entries[1]["location"]
 
 
-@pytest.mark.xfail(reason=XFAIL_ORDERING)
+
 def test_unsorted_lines_get_sorted_within_file(tmp_path):
     """Entries with lines in wrong order should be sorted after rerun."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\ny = 2\nz = 3  # noqa\n")
@@ -68,7 +65,7 @@ def test_unsorted_lines_get_sorted_within_file(tmp_path):
     assert entries[1]["location"].endswith(":3")
 
 
-@pytest.mark.xfail(reason=XFAIL_ORDERING)
+
 def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
     """Multiple tokens on same line should be sorted alphabetically by token."""
     (tmp_path / "test.py").write_text("x = 1  # type: ignore  # noqa\n")
@@ -90,7 +87,7 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
     assert tokens == sorted(tokens)
 
 
-@pytest.mark.xfail(reason=XFAIL_ORDERING)
+
 def test_new_entry_inserted_in_sorted_position(tmp_path):
     """New entry should appear in sorted position, not appended at end."""
     (tmp_path / "a.py").write_text("x = 1  # noqa\n")
@@ -114,7 +111,7 @@ def test_new_entry_inserted_in_sorted_position(tmp_path):
     assert basenames[0] == "a.py:1"
 
 
-@pytest.mark.xfail(reason=XFAIL_ORDERING)
+
 def test_ordering_preserved_after_stale_removal(tmp_path):
     """After stale removal, remaining entries should still be sorted."""
     (tmp_path / "a.py").write_text("x = 1  # noqa\n")

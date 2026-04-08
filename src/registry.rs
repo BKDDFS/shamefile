@@ -70,7 +70,13 @@ impl Registry {
         Ok(registry)
     }
 
-    pub fn save(&self, path: &Path) -> Result<(), ShamefileError> {
+    pub fn save(&mut self, path: &Path) -> Result<(), ShamefileError> {
+        self.entries.sort_by(|a, b| {
+            a.file()
+                .cmp(b.file())
+                .then(a.line().cmp(&b.line()))
+                .then(a.token.cmp(&b.token))
+        });
         let content = serde_yaml::to_string(self)?;
         fs::write(path, content).map_err(ShamefileError::RegistryReadError)?;
         Ok(())
