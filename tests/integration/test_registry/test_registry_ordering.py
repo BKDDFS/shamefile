@@ -137,3 +137,19 @@ def test_ordering_preserved_after_stale_removal(tmp_path):
     assert len(entries) == 2
     assert "a.py" in entries[0]["location"]
     assert "z.py" in entries[1]["location"]
+
+
+def test_ordering_stable_across_reruns(tmp_path):
+    """Running shame me twice without changes should produce entries in the same order."""
+    (tmp_path / "c.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "a.py").write_text("x = 1  # type: ignore\n")
+    (tmp_path / "b.py").write_text("x = 1  # nosec\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+    first = [e["location"] for e in yaml.safe_load(registry.read_text())["entries"]]
+
+    run_shamefile(str(tmp_path))
+    second = [e["location"] for e in yaml.safe_load(registry.read_text())["entries"]]
+
+    assert first == second
