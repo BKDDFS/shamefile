@@ -51,3 +51,14 @@ def test_token_inside_string_is_not_detected(tmp_path):
 
     assert result.returncode == 0
     assert "# noqa" not in result.stdout
+
+
+@pytest.mark.xfail(reason="scanner has no extension filter — scans all files including non-code")
+def test_non_code_files_not_scanned(tmp_path):
+    """Tokens in non-code files (.md, .json) should not be detected."""
+    (tmp_path / "README.md").write_text("Use `# noqa` to suppress linting warnings.\n")
+    (tmp_path / "config.json").write_text('{"rule": "// eslint-disable"}\n')
+
+    result = run_shamefile(str(tmp_path))
+
+    assert result.returncode == 0
