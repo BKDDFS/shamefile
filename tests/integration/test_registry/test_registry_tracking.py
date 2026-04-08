@@ -131,6 +131,19 @@ def test_noqa_prefix_not_double_counted(tmp_path):
     assert len(entries) == 1
 
 
+def test_suppression_on_last_line_without_trailing_newline(tmp_path):
+    """Token on last line without trailing newline should still be detected."""
+    test_file = tmp_path / "test.py"
+    test_file.write_bytes(b"x = 1  # noqa")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    assert len(entries) == 1
+    assert entries[0]["token"] == "# noqa"
+
+
 def test_different_tokens_same_line_independent_entries(tmp_path):
     """Different tokens on same line should be separate entries with independent why."""
     test_file = tmp_path / "test.py"
