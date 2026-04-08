@@ -112,3 +112,28 @@ def test_new_entry_inserted_in_sorted_position(tmp_path):
     entries = yaml.safe_load(registry.read_text())["entries"]
     basenames = [e["location"].split("/")[-1] for e in entries]
     assert basenames[0] == "a.py:1"
+
+
+@pytest.mark.xfail(reason=XFAIL_ORDERING)
+def test_ordering_preserved_after_stale_removal(tmp_path):
+    """After stale removal, remaining entries should still be sorted."""
+    (tmp_path / "a.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "z.py").write_text("x = 1  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    # Registry has z.py, m.py (stale), a.py — wrong order
+    write_registry(
+        registry,
+        [
+            make_entry(f"{tmp_path}/z.py:1", why="reason z"),
+            make_entry(f"{tmp_path}/m.py:1", why="reason m"),
+            make_entry(f"{tmp_path}/a.py:1", why="reason a"),
+        ],
+    )
+
+    run_shamefile(str(tmp_path))
+
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    assert len(entries) == 2
+    assert "a.py" in entries[0]["location"]
+    assert "z.py" in entries[1]["location"]
