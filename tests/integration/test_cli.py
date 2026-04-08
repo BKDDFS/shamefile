@@ -66,6 +66,28 @@ def test_shamefile_created_in_cwd_without_git(tmp_path):
     assert not (src / "shamefile.yaml").exists()
 
 
+@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
+def test_scan_path_scopes_what_is_scanned(tmp_path):
+    """'shame me src' should only scan src/, not sibling directories."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "test.py").write_text("x = 1  # noqa\n")
+
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "test.py").write_text("y = 2  # type: ignore\n")
+
+    subprocess.run(
+        [BINARY_PATH, "me", "src"], capture_output=True, text=True, cwd=tmp_path
+    )
+
+    # shamefile.yaml should be in CWD with entries only from src/
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry["entries"]
+    assert len(entries) == 1
+    assert "# noqa" in entries[0]["token"]
+
+
 def test_no_path_defaults_to_current_directory(tmp_path):
     """'shame me' without path should default to scanning current directory."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
