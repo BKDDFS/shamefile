@@ -90,3 +90,17 @@ def test_owner_no_git_repo(tmp_path):
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]
     assert entry["owner"] == "Unknown"
+
+
+def test_owner_missing_name_and_email(tmp_path):
+    """Git repo without user.name and user.email should produce 'Unknown'."""
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+
+    run_shamefile_no_global_git(str(tmp_path))
+
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entry = registry["entries"][0]
+    assert entry["owner"] == "Unknown"
