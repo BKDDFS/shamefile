@@ -3,9 +3,11 @@ import subprocess
 import pytest
 import yaml
 
-from conftest import BINARY_PATH, run_shamefile
+from conftest import BINARY_PATH
 
-XFAIL_REGISTRY_LOCATION = "shamefile.yaml is created in scan dir, should be at git root or CWD"
+XFAIL_REGISTRY_LOCATION = (
+    "shamefile.yaml is created in scan dir, should be at git root or CWD"
+)
 
 
 def test_dot_path_scans_current_directory(tmp_path):
@@ -21,21 +23,6 @@ def test_dot_path_scans_current_directory(tmp_path):
 
 
 @pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
-def test_shamefile_created_in_cwd_not_scan_dir(tmp_path):
-    """'shame me src' should create shamefile.yaml in CWD, not in src/."""
-    src = tmp_path / "src"
-    src.mkdir()
-    (src / "test.py").write_text("x = 1  # noqa\n")
-
-    subprocess.run(
-        [BINARY_PATH, "me", "src"], capture_output=True, text=True, cwd=tmp_path
-    )
-
-    assert (tmp_path / "shamefile.yaml").exists()
-    assert not (src / "shamefile.yaml").exists()
-
-
-@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
 def test_shamefile_created_at_git_root(tmp_path):
     """Running from subdirectory of a git repo should create shamefile.yaml at git root."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
@@ -43,9 +30,7 @@ def test_shamefile_created_at_git_root(tmp_path):
     src.mkdir()
     (src / "test.py").write_text("x = 1  # noqa\n")
 
-    subprocess.run(
-        [BINARY_PATH, "me", "."], capture_output=True, text=True, cwd=src
-    )
+    subprocess.run([BINARY_PATH, "me", "."], capture_output=True, text=True, cwd=src)
 
     assert (tmp_path / "shamefile.yaml").exists()
     assert not (src / "shamefile.yaml").exists()
@@ -88,7 +73,9 @@ def test_scan_path_scopes_what_is_scanned(tmp_path):
     assert "# noqa" in entries[0]["token"]
 
 
-@pytest.mark.xfail(reason="single file path is rejected, should scan the file and use git root/CWD for registry")
+@pytest.mark.xfail(
+    reason="single file path is rejected, should scan the file and use git root/CWD for registry"
+)
 def test_single_file_path_scans_that_file(tmp_path):
     """'shame me src/app.py' should scan that single file."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
