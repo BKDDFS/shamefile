@@ -1,5 +1,7 @@
 import subprocess
 
+import yaml
+
 from conftest import run_shamefile
 
 
@@ -90,6 +92,11 @@ def test_replacing_token_removes_old_and_adds_new(tmp_path):
     assert "Legacy code" not in registry_content
     assert "Removing stale entry" in result.stdout
     assert "New suppression detected" in result.stdout
+
+    # New entry should have empty why (forces re-justification)
+    entries = yaml.safe_load(registry_content)["entries"]
+    new_entry = [e for e in entries if e["token"] == "# type: ignore"][0]
+    assert new_entry["why"] == ""
 
 
 def test_stale_removed_and_new_added_same_run(tmp_path):

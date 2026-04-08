@@ -1,3 +1,5 @@
+import subprocess
+
 import pytest
 import yaml
 
@@ -9,8 +11,6 @@ XFAIL_MATCHING = "shame_vector and cascade matching not yet implemented"
 @pytest.fixture
 def line_shifted_entry(tmp_path):
     """Create entry by Alice, shift line, Bob reruns, return (original_entry, new_entry)."""
-    import subprocess
-
     # Init repo as Alice
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
     subprocess.run(
@@ -85,8 +85,6 @@ def test_line_shift_updates_location(line_shifted_entry):
 @pytest.fixture
 def two_entries_shifted(tmp_path):
     """Create two entries, shift both lines, rerun, return (originals, updated)."""
-    import subprocess
-
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
     subprocess.run(
         ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
@@ -150,8 +148,6 @@ def test_one_shifts_one_stays(tmp_path):
 @pytest.mark.xfail(reason=XFAIL_MATCHING)
 def test_large_line_shift(tmp_path):
     """Suppression shifting by many lines should still preserve why."""
-    import subprocess
-
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
     subprocess.run(
         ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True

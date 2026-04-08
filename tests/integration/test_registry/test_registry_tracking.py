@@ -23,6 +23,24 @@ def test_existing_entry_with_why_survives_rerun(tmp_path):
     assert "JIRA-123" in registry.read_text()
 
 
+def test_created_at_preserved_after_filling_why(tmp_path):
+    """Filling in 'why' and rerunning should not change created_at."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+    original_created_at = yaml.safe_load(registry.read_text())["entries"][0]["created_at"]
+
+    content = registry.read_text()
+    registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))
+
+    run_shamefile(str(tmp_path))
+
+    entry = yaml.safe_load(registry.read_text())["entries"][0]
+    assert entry["created_at"] == original_created_at
+
+
 def test_new_suppression_added_while_existing_preserved(tmp_path):
     """Adding new suppression to code should not lose existing justified entries."""
     test_file = tmp_path / "test.py"
@@ -99,6 +117,18 @@ def test_multiple_files_multiple_tokens_multiple_lines(tmp_path):
 
     assert result.returncode == 1  # four still unjustified
     assert "Justified" in registry.read_text()
+
+
+def test_noqa_prefix_not_double_counted(tmp_path):
+    """A line with '# noqa: E501' should create only one entry, not two."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa: E501\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(str(tmp_path))
+
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    assert len(entries) == 1
 
 
 def test_different_tokens_same_line_independent_entries(tmp_path):

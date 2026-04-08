@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 import pytest
 import yaml
 
@@ -31,8 +33,6 @@ def test_entry_has_empty_why_on_creation(single_entry):
 
 def test_entry_has_recent_created_at(single_entry):
     """Entry created_at should be a recent UTC timestamp."""
-    from datetime import datetime, timedelta, timezone
-
     created_at = single_entry["created_at"]
     now = datetime.now(timezone.utc)
 
