@@ -1,8 +1,23 @@
+import os
 import subprocess
 
 import yaml
 
-from conftest import run_shamefile
+from conftest import BINARY_PATH, run_shamefile
+
+# Environment that disables global/system git config
+NO_GLOBAL_GIT = {
+    **os.environ,
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_SYSTEM": "/dev/null",
+}
+
+
+def run_shamefile_no_global_git(*args):
+    """Run shamefile with global git config disabled."""
+    return subprocess.run(
+        [BINARY_PATH, "me", *args], capture_output=True, text=True, env=NO_GLOBAL_GIT
+    )
 
 
 def test_owner_from_git_blame_on_first_run(tmp_path):
@@ -63,3 +78,15 @@ def test_owner_fallback_uncommitted_file(tmp_path):
 
     # Fallback to git config user since blame fails on uncommitted file
     assert entry["owner"] == "Bob <bob@test.com>"
+
+
+def test_owner_no_git_repo(tmp_path):
+    """Without a git repo, owner should be 'Unknown'."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+
+    run_shamefile_no_global_git(str(tmp_path))
+
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entry = registry["entries"][0]
+    assert entry["owner"] == "Unknown"
