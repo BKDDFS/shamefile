@@ -10,13 +10,13 @@ def test_unicode_in_why_preserved(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     unicode_why = "Wegen Kompatibilität — José 日本語 🔥"
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", f"why: '{unicode_why}'"))
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
     entry = yaml.safe_load(registry.read_text())["entries"][0]
@@ -29,7 +29,7 @@ def test_multiline_why_accepted(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     # Replace why with a YAML block scalar
     content = registry.read_text()
@@ -40,7 +40,7 @@ def test_multiline_why_accepted(tmp_path):
         )
     )
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
     entry = yaml.safe_load(registry.read_text())["entries"][0]
@@ -54,12 +54,12 @@ def test_why_null_treated_as_empty(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: null"))
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
 
@@ -70,14 +70,14 @@ def test_why_with_yaml_special_chars(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     special_why = 'reason: see ticket #123 & "fix"'
     data = yaml.safe_load(registry.read_text())
     data["entries"][0]["why"] = special_why
     registry.write_text(yaml.dump(data, default_flow_style=False, allow_unicode=True))
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
     entry = yaml.safe_load(registry.read_text())["entries"][0]
@@ -90,7 +90,7 @@ def test_extra_fields_in_entry_stripped(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     data = yaml.safe_load(registry.read_text())
     data["entries"][0]["why"] = "Legacy code"
@@ -98,7 +98,7 @@ def test_extra_fields_in_entry_stripped(tmp_path):
     data["entries"][0]["reviewer"] = "Alice"
     registry.write_text(yaml.dump(data, default_flow_style=False, allow_unicode=True))
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entry = yaml.safe_load(registry.read_text())["entries"][0]
     assert entry["why"] == "Legacy code"

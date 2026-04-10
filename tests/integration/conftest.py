@@ -59,9 +59,9 @@ XFAIL_WHITESPACE_VARIANT = "Python-only: Flake8, Bandit accept whitespace varian
 XFAIL_BLOCK_COMMENT = "shamefile only tracks // comment style, not /* */ block comments"
 
 
-def run_shamefile(*args):
-    """Run the shamefile binary with 'me' subcommand."""
-    return subprocess.run([BINARY_PATH, "me", *args], capture_output=True, text=True)
+def run_shamefile(cwd, *args):
+    """Run the shamefile binary with 'me' subcommand in a specific working directory."""
+    return subprocess.run([BINARY_PATH, "me", *args], capture_output=True, text=True, cwd=str(cwd))
 
 
 def parse_tokens_from_rust_source() -> list[str]:

@@ -12,7 +12,7 @@ def test_stale_entry_removed(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     # First run — creates entry, fill why
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
@@ -20,7 +20,7 @@ def test_stale_entry_removed(tmp_path):
     test_file.write_text("x = 1\n")
 
     # Second run — should remove stale entry and exit 1 (registry changed)
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
     assert "Removing stale entry" in result.stdout
@@ -35,14 +35,14 @@ def test_deleted_file_entries_become_stale(tmp_path):
     file_b.write_text("y = 2  # type: ignore\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     assert "# noqa" in registry.read_text()
     assert "type: ignore" in registry.read_text()
 
     # Delete one file
     file_a.unlink()
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     registry_content = registry.read_text()
     assert "# noqa" not in registry_content
@@ -60,12 +60,12 @@ def test_gitignored_file_entries_become_stale(tmp_path):
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
 
     # First run — creates entry
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     assert "# noqa" in registry.read_text()
     (tmp_path / ".gitignore").write_text("test.py\n")
 
     # Second run — entry should be removed as stale
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert "Removing stale entry" in result.stdout
     assert "# noqa" not in registry.read_text()
@@ -78,14 +78,14 @@ def test_replacing_token_removes_old_and_adds_new(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     # First run + fill why
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
     # Developer replaces token
     test_file.write_text("x = 1  # type: ignore\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     registry_content = registry.read_text()
     assert "# noqa" not in registry_content
@@ -108,14 +108,14 @@ def test_stale_removed_and_new_added_same_run(tmp_path):
     file_b.write_text("y = 2  # type: ignore\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     # Remove a.py, add c.py
     file_a.unlink()
     file_c = tmp_path / "c.py"
     file_c.write_text("z = 3  # nosec\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     registry_content = registry.read_text()
     assert "# noqa" not in registry_content
@@ -132,7 +132,7 @@ def test_multiple_stale_entries_removed_at_once(tmp_path):
     (tmp_path / "c.py").write_text("z = 3  # nosec\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy'"))
 
@@ -142,7 +142,7 @@ def test_multiple_stale_entries_removed_at_once(tmp_path):
     (tmp_path / "c.py").unlink()
     (tmp_path / "clean.py").write_text("x = 1\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.stdout.count("Removing stale entry") == 3
     assert result.returncode == 1

@@ -9,10 +9,10 @@ def test_rerun_produces_same_yaml(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry_path = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     first_content = registry_path.read_text()
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     second_content = registry_path.read_text()
 
     assert first_content == second_content
@@ -24,7 +24,7 @@ def test_shamefile_yaml_not_scanned(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     # Fill why with text containing a suppression token
     content = registry.read_text()
@@ -32,7 +32,7 @@ def test_shamefile_yaml_not_scanned(tmp_path):
         content.replace("why: ''", "why: 'suppressed with # noqa because legacy'")
     )
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     # Should still have only 1 entry — shamefile.yaml itself is not scanned
     entries = yaml.safe_load(registry.read_text())["entries"]

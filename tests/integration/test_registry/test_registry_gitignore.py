@@ -22,7 +22,7 @@ def test_nested_gitignore_respected(tmp_path):
     # Root-level generated file — NOT ignored (nested .gitignore doesn't apply here)
     (tmp_path / "root.generated.py").write_text("w = 4  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     locations = [e["location"] for e in registry["entries"]]
@@ -41,7 +41,7 @@ def test_gitignore_negation_pattern(tmp_path):
     (tmp_path / "debug.log.py").write_text("x = 1  # noqa\n")
     (tmp_path / "important.log.py").write_text("y = 2  # type: ignore\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     locations = [e["location"] for e in registry["entries"]]

@@ -30,7 +30,7 @@ def line_shifted_entry(tmp_path):
     )
 
     # First run — Alice's suppression, Alice as owner (via git blame)
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     registry_path = tmp_path / "shamefile.yaml"
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
@@ -49,7 +49,7 @@ def line_shifted_entry(tmp_path):
 
     # Developer adds a blank line above — suppression shifts from line 1 to line 2
     test_file.write_text("\nx = 1  # noqa\n")
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     updated = yaml.safe_load(registry_path.read_text())["entries"][0]
     return original, updated
@@ -102,7 +102,7 @@ def two_entries_shifted(tmp_path):
         ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True
     )
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     registry_path = tmp_path / "shamefile.yaml"
     content = registry_path.read_text()
     content = content.replace("why: ''", "why: 'Justified'")
@@ -112,7 +112,7 @@ def two_entries_shifted(tmp_path):
 
     # Add blank line at top — both shift by 1
     test_file.write_text("\nx = 1  # noqa\ny = 2  # type: ignore\n")
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     updated = yaml.safe_load(registry_path.read_text())["entries"]
     return originals, updated
@@ -132,14 +132,14 @@ def test_one_shifts_one_stays(tmp_path):
     test_file.write_text("x = 1  # noqa\n\ny = 2  # type: ignore\n")
     registry_path = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Justified'"))
 
     # Insert line between them — only second shifts
     test_file.write_text("x = 1  # noqa\nnew line\n\ny = 2  # type: ignore\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load(registry_path.read_text())
     assert all(e["why"] == "Justified" for e in registry["entries"])
@@ -165,7 +165,7 @@ def test_large_line_shift(tmp_path):
         ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True
     )
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     registry_path = tmp_path / "shamefile.yaml"
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
@@ -173,7 +173,7 @@ def test_large_line_shift(tmp_path):
     # Shift by 20 lines
     test_file.write_text("\n" * 20 + "x = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load(registry_path.read_text())
     entry = registry["entries"][0]

@@ -48,7 +48,7 @@ def test_owner_from_git_blame_on_first_run(tmp_path):
         cwd=tmp_path,
         capture_output=True,
     )
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     alice_entry = registry["entries"][0]
@@ -71,7 +71,7 @@ def test_owner_fallback_uncommitted_file(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]

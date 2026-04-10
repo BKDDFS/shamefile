@@ -36,7 +36,7 @@ def test_unsorted_entries_get_sorted_by_file(tmp_path):
         ],
     )
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert "a.py" in entries[0]["location"]
@@ -58,7 +58,7 @@ def test_unsorted_lines_get_sorted_within_file(tmp_path):
         ],
     )
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert entries[0]["location"].endswith(":1")
@@ -80,7 +80,7 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
         ],
     )
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     tokens = [e["token"] for e in entries]
@@ -104,7 +104,7 @@ def test_new_entry_inserted_in_sorted_position(tmp_path):
         ],
     )
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     basenames = [e["location"].split("/")[-1] for e in entries]
@@ -128,7 +128,7 @@ def test_ordering_preserved_after_stale_removal(tmp_path):
         ],
     )
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 2
@@ -143,10 +143,10 @@ def test_ordering_stable_across_reruns(tmp_path):
     (tmp_path / "b.py").write_text("x = 1  # nosec\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     first = [e["location"] for e in yaml.safe_load(registry.read_text())["entries"]]
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     second = [e["location"] for e in yaml.safe_load(registry.read_text())["entries"]]
 
     assert first == second

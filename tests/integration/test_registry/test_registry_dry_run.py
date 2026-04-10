@@ -6,7 +6,7 @@ def test_dry_run_no_registry_exits(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    result = run_shamefile("--dry-run", str(tmp_path))
+    result = run_shamefile(tmp_path, "--dry-run")
 
     assert result.returncode == 1
     assert "Registry not found" in result.stderr
@@ -19,11 +19,11 @@ def test_dry_run_clean_state_exits(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
-    result = run_shamefile("--dry-run", str(tmp_path))
+    result = run_shamefile(tmp_path, "--dry-run")
 
     assert result.returncode == 0
     assert "All checks passed!" in result.stdout
@@ -38,7 +38,7 @@ def test_dry_run_undocumented_suppression_exits(tmp_path):
     # Create empty registry manually
     registry.write_text("config: {}\nentries: []\n")
 
-    result = run_shamefile("--dry-run", str(tmp_path))
+    result = run_shamefile(tmp_path, "--dry-run")
 
     assert result.returncode == 1
     assert "undocumented" in result.stdout.lower()
@@ -49,12 +49,12 @@ def test_dry_run_stale_entry_exits(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     # Remove suppression from code
     test_file.write_text("x = 1\n")
 
-    result = run_shamefile("--dry-run", str(tmp_path))
+    result = run_shamefile(tmp_path, "--dry-run")
 
     assert result.returncode == 1
     assert "stale" in result.stdout.lower()
@@ -65,9 +65,9 @@ def test_dry_run_missing_why_exits_1(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
-    result = run_shamefile("--dry-run", str(tmp_path))
+    result = run_shamefile(tmp_path, "--dry-run")
 
     assert result.returncode == 1
     assert "without reason" in result.stdout.lower()
@@ -79,13 +79,13 @@ def test_dry_run_does_not_modify_registry(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content_before = registry.read_text()
 
     # Add new suppression — dry-run should NOT update registry
     test_file.write_text("x = 1  # noqa\ny = 2  # type: ignore\n")
 
-    run_shamefile("--dry-run", str(tmp_path))
+    run_shamefile(tmp_path, "--dry-run")
 
     assert registry.read_text() == content_before
 
@@ -96,7 +96,7 @@ def test_dry_run_does_not_create_registry(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile("--dry-run", str(tmp_path))
+    run_shamefile(tmp_path, "--dry-run")
 
     assert not registry.exists()
 
@@ -106,8 +106,8 @@ def test_dry_run_short_flag_n(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    result_long = run_shamefile("--dry-run", str(tmp_path))
-    result_short = run_shamefile("-n", str(tmp_path))
+    result_long = run_shamefile(tmp_path, "--dry-run")
+    result_short = run_shamefile(tmp_path, "-n")
 
     assert result_long.returncode == result_short.returncode
 
@@ -117,12 +117,12 @@ def test_dry_run_multiple_failures(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     # Add new suppression (undocumented) and remove old one (stale)
     test_file.write_text("y = 2  # type: ignore\n")
 
-    result = run_shamefile("--dry-run", str(tmp_path))
+    result = run_shamefile(tmp_path, "--dry-run")
 
     assert result.returncode == 1
     # All three failure types should be reported:

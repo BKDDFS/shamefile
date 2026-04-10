@@ -10,7 +10,7 @@ def test_detects_token(token, extension, tmp_path):
     test_file = tmp_path / f"test{extension}"
     test_file.write_text(f"x = 1  {token}\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
     assert token in result.stdout
@@ -27,7 +27,7 @@ def test_detects_in_nested_dirs(tmp_path):
     (tmp_path / "level0" / "level1" / "mid.py").write_text("x = 1  # type: ignore\n")
     (nested / "deep.py").write_text("x = 1  # nosec\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
     assert "Found 3 suppressions in code" in result.stdout
@@ -43,7 +43,7 @@ def test_ignores_gitignored_files(tmp_path):
     ignored_dir.mkdir()
     (ignored_dir / "hidden.py").write_text("x = 1  # noqa\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
     assert "# noqa" not in result.stdout
@@ -55,7 +55,7 @@ def test_gitignore_not_respected_without_git_init(tmp_path):
     ignored_dir.mkdir()
     (ignored_dir / "hidden.py").write_text("x = 1  # noqa\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
     assert "# noqa" in result.stdout
@@ -68,7 +68,7 @@ def test_multiple_files_multiple_languages(tmp_path):
         (tmp_path / f"test{ext}").write_text(f"x = 1  {token}\n")
         expected_tokens.append(token)
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
     assert f"Found {len(expected_tokens)} suppressions" in result.stdout

@@ -11,7 +11,7 @@ def single_entry(tmp_path):
     """Create a file with one suppression, run shamefile, return the entry."""
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     return registry["entries"][0]
 

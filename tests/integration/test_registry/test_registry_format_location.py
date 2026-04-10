@@ -8,7 +8,7 @@ def test_entry_location_matches_line_position(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("clean\nclean\nx = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]
@@ -23,7 +23,7 @@ def test_entry_location_includes_nested_path(tmp_path):
     test_file = nested / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]
@@ -38,7 +38,7 @@ def test_entry_location_with_spaces_in_path(tmp_path):
     test_file = spaced / "my file.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]
@@ -53,7 +53,7 @@ def test_entry_location_with_colon_in_path(tmp_path):
     test_file = colon_dir / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]

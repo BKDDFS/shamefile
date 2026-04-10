@@ -6,7 +6,7 @@ def test_corrupt_yaml_exits_with_error(tmp_path):
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
     (tmp_path / "shamefile.yaml").write_text("asdkjhasd{{{")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
     assert "Failed to load registry" in result.stderr
@@ -18,7 +18,7 @@ def test_file_path_rejected(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    result = run_shamefile(str(test_file))
+    result = run_shamefile(test_file.parent, str(test_file.name))
 
     assert result.returncode == 1
     assert "must be a directory" in result.stderr
@@ -26,7 +26,7 @@ def test_file_path_rejected(tmp_path):
 
 def test_nonexistent_directory(tmp_path):
     """Passing a non-existent directory should exit 1 with error."""
-    result = run_shamefile(str(tmp_path / "nonexistent"))
+    result = run_shamefile(tmp_path, "nonexistent")
 
     assert result.returncode == 1
 
@@ -36,7 +36,7 @@ def test_empty_shamefile_yaml(tmp_path):
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
     (tmp_path / "shamefile.yaml").write_text("")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     # Should work — empty YAML deserializes to default registry
     assert "Found 1 suppressions" in result.stdout

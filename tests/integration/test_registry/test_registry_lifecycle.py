@@ -7,11 +7,11 @@ def test_happy_path_all_justified(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
     assert "Validation passed" in result.stdout
@@ -22,7 +22,7 @@ def test_empty_why_fails(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
     assert "Missing reason (why)" in result.stdout
@@ -34,11 +34,11 @@ def test_whitespace_only_why_is_rejected(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: '   '"))
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
     assert "Missing reason (why)" in result.stdout
@@ -51,7 +51,7 @@ def test_creates_registry_when_missing(tmp_path):
     registry = tmp_path / "shamefile.yaml"
     assert not registry.exists()
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert registry.exists()
     assert result.returncode == 1
@@ -63,7 +63,7 @@ def test_no_suppressions_creates_empty_registry(tmp_path):
     test_file.write_text("x = 1\n")
     registry = tmp_path / "shamefile.yaml"
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
     assert registry.exists()

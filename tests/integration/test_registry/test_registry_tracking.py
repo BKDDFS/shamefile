@@ -10,14 +10,14 @@ def test_existing_entry_with_why_survives_rerun(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     # First run — creates registry with empty why
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     # Simulate developer filling in the why
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code, see JIRA-123'"))
 
     # Second run — should keep the existing entry with why
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
     assert "JIRA-123" in registry.read_text()
@@ -29,13 +29,13 @@ def test_created_at_preserved_after_filling_why(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     original_created_at = yaml.safe_load(registry.read_text())["entries"][0]["created_at"]
 
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entry = yaml.safe_load(registry.read_text())["entries"][0]
     assert entry["created_at"] == original_created_at
@@ -48,7 +48,7 @@ def test_new_suppression_added_while_existing_preserved(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     # First run + fill why
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code, see JIRA-123'"))
 
@@ -56,7 +56,7 @@ def test_new_suppression_added_while_existing_preserved(tmp_path):
     test_file.write_text("x = 1  # noqa\ny = 2  # type: ignore\n")
 
     # Second run
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     registry_content = registry.read_text()
     assert result.returncode == 1  # new entry has empty why
@@ -71,14 +71,14 @@ def test_same_token_on_multiple_lines_tracked_independently(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     # First run — creates two entries
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry.read_text()
     assert content.count("# noqa") == 2
 
     # Justify only the first one (line 1)
     registry.write_text(content.replace("why: ''", "why: 'Justified'", 1))
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1  # second entry still unjustified
     registry_content = registry.read_text()
@@ -91,7 +91,7 @@ def test_duplicate_token_on_same_line_counted_once(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa  # noqa\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert "Found 1 suppressions" in result.stdout
 
@@ -105,7 +105,7 @@ def test_multiple_files_multiple_tokens_multiple_lines(tmp_path):
     (tmp_path / "c.js").write_text("b = 2  // eslint-disable-line no-unused-vars\n")
     registry = tmp_path / "shamefile.yaml"
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert "Found 5 suppressions" in result.stdout
 
@@ -113,7 +113,7 @@ def test_multiple_files_multiple_tokens_multiple_lines(tmp_path):
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Justified'", 1))
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     assert result.returncode == 1  # four still unjustified
     assert "Justified" in registry.read_text()
@@ -125,7 +125,7 @@ def test_noqa_prefix_not_double_counted(tmp_path):
     test_file.write_text("x = 1  # noqa: E501\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 1
@@ -137,7 +137,7 @@ def test_suppression_on_last_line_without_trailing_newline(tmp_path):
     test_file.write_bytes(b"x = 1  # noqa")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 1
@@ -150,7 +150,7 @@ def test_different_tokens_same_line_independent_entries(tmp_path):
     test_file.write_text("x = 1  # noqa  # type: ignore\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     tokens = {e["token"] for e in entries}

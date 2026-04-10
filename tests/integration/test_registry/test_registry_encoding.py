@@ -9,7 +9,7 @@ def test_utf8_bom_file_detected(tmp_path):
     test_file.write_bytes(b"\xef\xbb\xbfx = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 1
@@ -22,7 +22,7 @@ def test_crlf_line_endings_detected(tmp_path):
     test_file.write_bytes(b"x = 1  # noqa\r\ny = 2\r\n")
     registry = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 1
@@ -40,7 +40,7 @@ def test_non_utf8_file_skipped_with_warning(tmp_path):
     valid.write_text("y = 2  # type: ignore\n")
     registry = tmp_path / "shamefile.yaml"
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     # Scanner should warn about the skipped file
     assert "Warning" in result.stderr

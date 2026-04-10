@@ -13,7 +13,7 @@ def test_content_change_updates_shame_vector(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry_path = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
@@ -22,7 +22,7 @@ def test_content_change_updates_shame_vector(tmp_path):
     # Developer changes the code but keeps the suppression on the same line
     test_file.write_text("y = calculate()  # noqa\n")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load(registry_path.read_text())
     entry = registry["entries"][0]
@@ -39,14 +39,14 @@ def test_line_shift_and_content_change_reports_unmatched(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry_path = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
     # Developer changes both line and content
     test_file.write_text("\ny = calculate()  # noqa\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     # Old entry should NOT be auto-removed
     registry = yaml.safe_load(registry_path.read_text())
@@ -61,12 +61,12 @@ def test_file_rename_preserves_why(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry_path = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
     test_file.rename(tmp_path / "helpers.py")
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load(registry_path.read_text())
     entry = registry["entries"][0]
@@ -82,13 +82,13 @@ def test_file_rename_plus_content_change_reports_unmatched(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     registry_path = tmp_path / "shamefile.yaml"
 
-    run_shamefile(str(tmp_path))
+    run_shamefile(tmp_path)
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
     test_file.unlink()
     (tmp_path / "helpers.py").write_text("y = calculate()  # noqa\n")
 
-    result = run_shamefile(str(tmp_path))
+    result = run_shamefile(tmp_path)
 
     # Old entry should NOT be auto-removed
     registry = yaml.safe_load(registry_path.read_text())
