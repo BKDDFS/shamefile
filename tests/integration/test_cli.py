@@ -95,6 +95,37 @@ def test_single_file_path_scans_that_file(tmp_path):
     assert "# noqa" in entries[0]["token"]
 
 
+@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
+def test_single_file_with_git_uses_git_root(tmp_path):
+    """'shame me app.py' from subdir of git repo should place registry at git root."""
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("x = 1  # noqa\n")
+
+    subprocess.run(
+        [BINARY_PATH, "me", "app.py"], capture_output=True, text=True, cwd=src
+    )
+
+    assert (tmp_path / "shamefile.yaml").exists()
+    assert not (src / "shamefile.yaml").exists()
+
+
+@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
+def test_single_file_without_git_uses_cwd(tmp_path):
+    """'shame me src/app.py' without git should place registry at CWD, not file's dir."""
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("x = 1  # noqa\n")
+
+    subprocess.run(
+        [BINARY_PATH, "me", "src/app.py"], capture_output=True, text=True, cwd=tmp_path
+    )
+
+    assert (tmp_path / "shamefile.yaml").exists()
+    assert not (src / "shamefile.yaml").exists()
+
+
 def test_no_path_defaults_to_current_directory(tmp_path):
     """'shame me' without path should default to scanning current directory."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
