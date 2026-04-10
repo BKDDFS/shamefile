@@ -1,5 +1,22 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
+
+/// Find the git repository root by walking up from a starting path.
+/// Returns the first directory containing a .git entry (file or directory).
+/// Returns None if not inside a git repository.
+pub fn find_git_root(start: &Path) -> Option<PathBuf> {
+    let start_canonical = std::fs::canonicalize(start).ok()?;
+    let start_dir = if start_canonical.is_file() {
+        start_canonical.parent()?.to_path_buf()
+    } else {
+        start_canonical
+    };
+
+    start_dir
+        .ancestors()
+        .find(|p| p.join(".git").exists())
+        .map(|p| p.to_path_buf())
+}
 
 /// Fetch the current git user and email for a given repo path.
 /// Returns "Name <email>" or "Unknown" if git is not configured.

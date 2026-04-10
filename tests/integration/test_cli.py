@@ -5,10 +5,6 @@ import yaml
 
 from conftest import BINARY_PATH
 
-XFAIL_REGISTRY_LOCATION = (
-    "shamefile.yaml is created in scan dir, should be at git root or CWD"
-)
-
 
 def test_dot_path_scans_current_directory(tmp_path):
     """'shame me .' should scan the current directory."""
@@ -22,7 +18,6 @@ def test_dot_path_scans_current_directory(tmp_path):
     assert (tmp_path / "shamefile.yaml").exists()
 
 
-@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
 def test_shamefile_created_at_git_root(tmp_path):
     """Running from subdirectory of a git repo should create shamefile.yaml at git root."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
@@ -36,7 +31,6 @@ def test_shamefile_created_at_git_root(tmp_path):
     assert not (src / "shamefile.yaml").exists()
 
 
-@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
 def test_shamefile_created_in_cwd_without_git(tmp_path):
     """Without a git repo, shamefile.yaml should be created in CWD."""
     src = tmp_path / "src"
@@ -51,7 +45,6 @@ def test_shamefile_created_in_cwd_without_git(tmp_path):
     assert not (src / "shamefile.yaml").exists()
 
 
-@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
 def test_scan_path_scopes_what_is_scanned(tmp_path):
     """'shame me src' should only scan src/, not sibling directories."""
     src = tmp_path / "src"
@@ -73,9 +66,6 @@ def test_scan_path_scopes_what_is_scanned(tmp_path):
     assert "# noqa" in entries[0]["token"]
 
 
-@pytest.mark.xfail(
-    reason="single file path is rejected, should scan the file and use git root/CWD for registry"
-)
 def test_single_file_path_scans_that_file(tmp_path):
     """'shame me src/app.py' should scan that single file."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
@@ -95,7 +85,6 @@ def test_single_file_path_scans_that_file(tmp_path):
     assert "# noqa" in entries[0]["token"]
 
 
-@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
 def test_single_file_with_git_uses_git_root(tmp_path):
     """'shame me app.py' from subdir of git repo should place registry at git root."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
@@ -111,7 +100,6 @@ def test_single_file_with_git_uses_git_root(tmp_path):
     assert not (src / "shamefile.yaml").exists()
 
 
-@pytest.mark.xfail(reason=XFAIL_REGISTRY_LOCATION)
 def test_single_file_without_git_uses_cwd(tmp_path):
     """'shame me src/app.py' without git should place registry at CWD, not file's dir."""
     src = tmp_path / "src"

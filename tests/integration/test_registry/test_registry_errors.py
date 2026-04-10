@@ -13,17 +13,6 @@ def test_corrupt_yaml_exits_with_error(tmp_path):
     assert "Failed to parse" in result.stderr
 
 
-def test_file_path_rejected(tmp_path):
-    """Passing a file instead of directory should fail with clear error."""
-    test_file = tmp_path / "test.py"
-    test_file.write_text("x = 1  # noqa\n")
-
-    result = run_shamefile(test_file.parent, str(test_file.name))
-
-    assert result.returncode == 1
-    assert "must be a directory" in result.stderr
-
-
 def test_nonexistent_directory(tmp_path):
     """Passing a non-existent directory should exit 1 with error."""
     result = run_shamefile(tmp_path, "nonexistent")
