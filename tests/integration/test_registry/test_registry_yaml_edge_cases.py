@@ -143,3 +143,25 @@ def test_wrong_type_in_field_exits_with_error(tmp_path):
     assert result.returncode == 1
     assert "Failed to load registry" in result.stderr
     assert "invalid type" in result.stderr
+
+
+def test_non_utc_timezone_normalized_to_utc(tmp_path):
+    """Non-UTC timezone offset in created_at is parsed and normalized to UTC by chrono."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "shamefile.yaml").write_text(
+        "config: {}\n"
+        "entries:\n"
+        "  - location: './test.py:1'\n"
+        "    token: '# noqa'\n"
+        "    owner: 'Alice'\n"
+        "    created_at: '2024-01-15T10:00:00+05:30'\n"
+        "    why: 'Legacy'\n"
+    )
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    saved = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    created_at = str(saved["entries"][0]["created_at"])
+    assert "2024-01-15" in created_at
+    assert "04:30" in created_at
