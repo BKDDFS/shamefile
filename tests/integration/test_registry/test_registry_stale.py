@@ -6,22 +6,23 @@ from conftest import run_shamefile
 
 
 def test_stale_entry_removed(tmp_path):
-    """Removing suppression from code should remove its entry from registry."""
+    """Removing suppression from code should remove its entry and exit 1."""
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    # First run — creates entry
+    # First run — creates entry, fill why
     run_shamefile(str(tmp_path))
-    assert "# noqa" in registry.read_text()
+    content = registry.read_text()
+    registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
     # Developer removes suppression
     test_file.write_text("x = 1\n")
 
-    # Second run — should remove stale entry
+    # Second run — should remove stale entry and exit 1 (registry changed)
     result = run_shamefile(str(tmp_path))
 
-    assert result.returncode == 0
+    assert result.returncode == 1
     assert "Removing stale entry" in result.stdout
     assert "# noqa" not in registry.read_text()
 
@@ -125,12 +126,15 @@ def test_stale_removed_and_new_added_same_run(tmp_path):
 
 
 def test_multiple_stale_entries_removed_at_once(tmp_path):
-    """Multiple stale entries should all be removed in one run."""
+    """Multiple stale entries should all be removed and exit 1."""
     (tmp_path / "a.py").write_text("x = 1  # noqa\n")
     (tmp_path / "b.py").write_text("y = 2  # type: ignore\n")
     (tmp_path / "c.py").write_text("z = 3  # nosec\n")
+    registry = tmp_path / "shamefile.yaml"
 
     run_shamefile(str(tmp_path))
+    content = registry.read_text()
+    registry.write_text(content.replace("why: ''", "why: 'Legacy'"))
 
     # Remove all suppression files, add clean file
     (tmp_path / "a.py").unlink()
@@ -141,4 +145,4 @@ def test_multiple_stale_entries_removed_at_once(tmp_path):
     result = run_shamefile(str(tmp_path))
 
     assert result.stdout.count("Removing stale entry") == 3
-    assert result.returncode == 0
+    assert result.returncode == 1

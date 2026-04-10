@@ -172,7 +172,10 @@ fn handle_normal(scan_path: &Path, config_path: &Path) -> Result<()> {
         );
     }
 
-    // 7. Exit 1 if errors
+    // 7. Exit 1 if registry changed or errors
+    if removed_count > 0 {
+        errors_found = true;
+    }
     if errors_found {
         println!(
             "Validation failed! Please add reasons (why) to {}",
