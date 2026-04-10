@@ -29,3 +29,26 @@ def test_symlink_to_file_not_followed(tmp_path):
     assert len(registry["entries"]) == 1
     assert any("real.py" in loc for loc in locations)
     assert not any("link.py" in loc for loc in locations)
+
+
+def test_permission_denied_file_skipped_with_warning(tmp_path):
+    """Unreadable files are skipped gracefully with a warning on stderr."""
+    ok = tmp_path / "ok.py"
+    ok.write_text("x = 1  # noqa\n")
+    secret = tmp_path / "secret.py"
+    secret.write_text("y = 2  # type: ignore\n")
+    secret.chmod(0o000)
+
+    try:
+        result = run_shamefile(tmp_path)
+
+        assert result.returncode < 128, "process killed by signal"
+        assert "warning" in result.stderr.lower() or "skipping" in result.stderr.lower()
+
+        registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+        locations = [e["location"] for e in registry["entries"]]
+
+        assert any("ok.py" in loc for loc in locations)
+        assert not any("secret.py" in loc for loc in locations)
+    finally:
+        secret.chmod(0o644)
