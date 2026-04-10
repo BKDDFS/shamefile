@@ -165,3 +165,28 @@ def test_non_utc_timezone_normalized_to_utc(tmp_path):
     created_at = str(saved["entries"][0]["created_at"])
     assert "2024-01-15" in created_at
     assert "04:30" in created_at
+
+
+@pytest.mark.xfail(reason="duplicate entries silently accepted — should fail with error asking user to fix")
+def test_duplicate_entries_rejected(tmp_path):
+    """Duplicate entries (same location + token) should be rejected with a clear error."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "shamefile.yaml").write_text(
+        "config: {}\n"
+        "entries:\n"
+        "  - location: './test.py:1'\n"
+        "    token: '# noqa'\n"
+        "    owner: 'Alice'\n"
+        "    created_at: '2024-01-15T00:00:00Z'\n"
+        "    why: 'Legacy from 2019'\n"
+        "  - location: './test.py:1'\n"
+        "    token: '# noqa'\n"
+        "    owner: 'Bob'\n"
+        "    created_at: '2024-02-01T00:00:00Z'\n"
+        "    why: 'Performance workaround per JIRA-456'\n"
+    )
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "duplicate" in result.stderr.lower() or "duplicate" in result.stdout.lower()
