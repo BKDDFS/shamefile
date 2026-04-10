@@ -104,3 +104,42 @@ def test_extra_fields_in_entry_stripped(tmp_path):
     assert entry["why"] == "Legacy code"
     assert "ticket" not in entry
     assert "reviewer" not in entry
+
+
+def test_missing_required_field_exits_with_error(tmp_path):
+    """Missing required field (token) in entry should produce a clear deserialization error."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "shamefile.yaml").write_text(
+        "config: {}\n"
+        "entries:\n"
+        "  - location: 'test.py:1'\n"
+        "    owner: 'Alice'\n"
+        "    created_at: '2024-01-15T00:00:00Z'\n"
+        "    why: 'reason'\n"
+    )
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "Failed to load registry" in result.stderr
+    assert "missing field" in result.stderr
+
+
+def test_wrong_type_in_field_exits_with_error(tmp_path):
+    """Wrong type (list instead of string) in a field should produce a clear deserialization error."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "shamefile.yaml").write_text(
+        "config: {}\n"
+        "entries:\n"
+        "  - location: 'test.py:1'\n"
+        "    token: ['# noqa', '# nosec']\n"
+        "    owner: 'Alice'\n"
+        "    created_at: '2024-01-15T00:00:00Z'\n"
+        "    why: 'reason'\n"
+    )
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "Failed to load registry" in result.stderr
+    assert "invalid type" in result.stderr
