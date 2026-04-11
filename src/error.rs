@@ -16,10 +16,4 @@ pub enum ShamefileError {
 
     #[error("Failed to scan directory")]
     ScanError(#[from] io::Error),
-
-    #[error("Failed to compile regex")]
-    RegexCompileError(#[from] grep::regex::Error),
-
-    #[error("Error walking directory")]
-    IgnoreError(#[from] ignore::Error),
 }

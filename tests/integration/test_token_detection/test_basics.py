@@ -1,7 +1,7 @@
 import subprocess
 
 import pytest
-from conftest import LANGUAGE_TOKENS, TOKEN_PARAMS, run_shamefile
+from conftest import EXTENSION_PARAMS, LANGUAGES, TOKEN_PARAMS, run_shamefile
 
 
 @pytest.mark.parametrize(("token", "extension"), TOKEN_PARAMS)
@@ -67,9 +67,10 @@ def test_gitignore_not_respected_without_git_init(tmp_path):
 def test_multiple_files_multiple_languages(tmp_path):
     """One file per language extension should detect all their tokens."""
     expected_tokens = []
-    for ext, tokens in LANGUAGE_TOKENS.items():
-        token = tokens[0]
-        (tmp_path / f"test{ext}").write_text(f"x = 1  {token}\n")
+    for cfg in LANGUAGES.values():
+        token = cfg["tokens"][0]
+        ext = cfg["extensions"][0]
+        (tmp_path / f"test.{ext}").write_text(f"x = 1  {token}\n")
         expected_tokens.append(token)
 
     result = run_shamefile(tmp_path)
@@ -78,3 +79,36 @@ def test_multiple_files_multiple_languages(tmp_path):
     assert f"Found {len(expected_tokens)} suppressions" in result.stdout
     for token in expected_tokens:
         assert token in result.stdout
+
+
+@pytest.mark.parametrize(("token", "extension"), EXTENSION_PARAMS)
+def test_detects_token_in_each_extension(token, extension, tmp_path):
+    """A token should be detected in every extension of its language."""
+    test_file = tmp_path / f"test{extension}"
+    test_file.write_text(f"x = 1  {token}\n")
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert token in result.stdout
+    assert "New suppression detected" in result.stdout
+
+
+def test_python_token_in_js_file_not_detected(tmp_path):
+    """Python-specific token in a .js file should not be detected."""
+    (tmp_path / "test.js").write_text("// # noqa\n")
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    assert "# noqa" not in result.stdout
+
+
+def test_js_token_in_py_file_not_detected(tmp_path):
+    """JavaScript-specific token in a .py file should not be detected."""
+    (tmp_path / "test.py").write_text("# // eslint-disable\n")
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    assert "// eslint-disable" not in result.stdout

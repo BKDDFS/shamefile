@@ -1,24 +1,41 @@
-from conftest import ALL_TOKENS, parse_tokens_from_rust_source
+from conftest import LANGUAGES, parse_languages_from_rust_source
 
 
-def test_parse_tokens_from_rust_source_sanity():
-    """Parsing tokens.rs should return a non-empty list containing known tokens."""
-    tokens = parse_tokens_from_rust_source()
-    assert len(tokens) > 0
-    assert "# noqa" in tokens
+def test_parse_languages_sanity():
+    """Parsing languages.rs should return all expected languages."""
+    languages = parse_languages_from_rust_source()
+    assert len(languages) > 0
+    assert "Python" in languages
+    assert "JavaScript" in languages
+    assert "TypeScript" in languages
 
 
-def test_all_test_tokens_exist_in_rust_source():
-    """Every token defined in Python tests must exist in tokens.rs."""
-    rust_tokens = parse_tokens_from_rust_source()
+def test_tokens_match_per_language():
+    """Tokens defined in Python tests must match tokens in languages.rs per language."""
+    rust_languages = parse_languages_from_rust_source()
+    for name, expected in LANGUAGES.items():
+        assert name in rust_languages, f"Language '{name}' missing from languages.rs"
+        assert sorted(rust_languages[name]["tokens"]) == sorted(expected["tokens"]), (
+            f"Token mismatch for {name}:\n"
+            f"  Rust:  {sorted(rust_languages[name]['tokens'])}\n"
+            f"  Tests: {sorted(expected['tokens'])}"
+        )
 
-    for token in ALL_TOKENS:
-        assert token in rust_tokens, f"Token '{token}' is in tests but not in tokens.rs"
+
+def test_extensions_match_per_language():
+    """Extensions defined in Python tests must match extensions in languages.rs per language."""
+    rust_languages = parse_languages_from_rust_source()
+    for name, expected in LANGUAGES.items():
+        assert name in rust_languages, f"Language '{name}' missing from languages.rs"
+        assert sorted(rust_languages[name]["extensions"]) == sorted(expected["extensions"]), (
+            f"Extension mismatch for {name}:\n"
+            f"  Rust:  {sorted(rust_languages[name]['extensions'])}\n"
+            f"  Tests: {sorted(expected['extensions'])}"
+        )
 
 
-def test_all_rust_tokens_exist_in_tests():
-    """Every token in tokens.rs must be covered by Python tests."""
-    rust_tokens = parse_tokens_from_rust_source()
-
-    for token in rust_tokens:
-        assert token in ALL_TOKENS, f"Token '{token}' is in tokens.rs but not in tests"
+def test_no_extra_languages_in_rust():
+    """Every language in languages.rs must be covered by Python tests."""
+    rust_languages = parse_languages_from_rust_source()
+    for name in rust_languages:
+        assert name in LANGUAGES, f"Language '{name}' is in languages.rs but not in test LANGUAGES"

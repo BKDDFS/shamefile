@@ -86,14 +86,20 @@ fn handle_me(scan_paths: &[PathBuf], dry_run: bool, hidden: bool) -> Result<()> 
     }
 }
 
+struct NormalizedScanData {
+    violations: Vec<scanner::Violation>,
+    scanned_files: HashSet<PathBuf>,
+    skipped_files: HashSet<PathBuf>,
+}
+
 /// Filters out shamefile.yaml from violations and normalizes paths relative to registry_dir.
-/// Also normalizes scanned_files paths the same way.
 fn filter_and_normalize(
     violations: Vec<scanner::Violation>,
     scanned_files: HashSet<PathBuf>,
+    skipped_files: HashSet<PathBuf>,
     config_path: &Path,
     registry_dir: &Path,
-) -> Result<(Vec<scanner::Violation>, HashSet<PathBuf>)> {
+) -> Result<NormalizedScanData> {
     let registry_dir_canonical =
         std::fs::canonicalize(registry_dir).context("Failed to canonicalize registry directory")?;
     let config_path_canonical =
@@ -116,19 +122,25 @@ fn filter_and_normalize(
         })
         .collect();
 
-    let normalized_files = scanned_files
-        .into_iter()
-        .filter_map(|f| {
-            let f_canonical = std::fs::canonicalize(&f).ok()?;
-            if let Ok(relative) = f_canonical.strip_prefix(&registry_dir_canonical) {
-                Some(relative.to_path_buf())
-            } else {
-                Some(f)
-            }
-        })
-        .collect();
+    let normalize_paths = |files: HashSet<PathBuf>| -> HashSet<PathBuf> {
+        files
+            .into_iter()
+            .filter_map(|f| {
+                let f_canonical = std::fs::canonicalize(&f).ok()?;
+                if let Ok(relative) = f_canonical.strip_prefix(&registry_dir_canonical) {
+                    Some(relative.to_path_buf())
+                } else {
+                    Some(f)
+                }
+            })
+            .collect()
+    };
 
-    Ok((normalized_violations, normalized_files))
+    Ok(NormalizedScanData {
+        violations: normalized_violations,
+        scanned_files: normalize_paths(scanned_files),
+        skipped_files: normalize_paths(skipped_files),
+    })
 }
 
 fn handle_normal(
@@ -149,14 +161,27 @@ fn handle_normal(
     // 2. Scan for violations
     let mut all_violations = Vec::new();
     let mut all_scanned_files = HashSet::new();
+    let mut all_skipped_files = HashSet::new();
     for path in scan_paths {
         println!("Scanning {} for suppressions...", path.display());
         let result = scanner::scan(path, hidden).context("Failed to scan files")?;
         all_violations.extend(result.violations);
         all_scanned_files.extend(result.scanned_files);
+        all_skipped_files.extend(result.skipped_files);
     }
-    let (mut violations, scanned_files) =
-        filter_and_normalize(all_violations, all_scanned_files, config_path, registry_dir)?;
+    let scan_data = filter_and_normalize(
+        all_violations,
+        all_scanned_files,
+        all_skipped_files,
+        config_path,
+        registry_dir,
+    )?;
+    let mut violations = scan_data.violations;
+    let scanned_files = scan_data.scanned_files;
+    let skipped_files = scan_data.skipped_files;
+    for f in &skipped_files {
+        println!("Skipped unreadable file: {}", f.display());
+    }
     violations.sort_by(|a, b| {
         (&a.path, a.line_number, &a.matched_token).cmp(&(&b.path, b.line_number, &b.matched_token))
     });
@@ -235,10 +260,15 @@ fn handle_normal(
         } else {
             entry_file_raw
         };
-        let in_scope = scanned_files.contains(&entry_file)
-            || scan_paths_canonical
+        let in_scope = if scanned_files.contains(&entry_file) {
+            true
+        } else if skipped_files.contains(&entry_file) {
+            false // file exists but couldn't be read — don't assume stale
+        } else {
+            scan_paths_canonical
                 .iter()
-                .any(|sp| entry_file.starts_with(sp));
+                .any(|sp| entry_file.starts_with(sp))
+        };
         if !in_scope {
             return true; // not in scan scope — leave it alone
         }
@@ -328,14 +358,27 @@ fn handle_dry_run(
     // 2. Scan for violations
     let mut all_violations = Vec::new();
     let mut all_scanned_files = HashSet::new();
+    let mut all_skipped_files = HashSet::new();
     for path in scan_paths {
         println!("Step 1: Scanning {} for suppressions...", path.display());
         let result = scanner::scan(path, hidden).context("Failed to scan files")?;
         all_violations.extend(result.violations);
         all_scanned_files.extend(result.scanned_files);
+        all_skipped_files.extend(result.skipped_files);
     }
-    let (mut violations, scanned_files) =
-        filter_and_normalize(all_violations, all_scanned_files, config_path, registry_dir)?;
+    let scan_data = filter_and_normalize(
+        all_violations,
+        all_scanned_files,
+        all_skipped_files,
+        config_path,
+        registry_dir,
+    )?;
+    let mut violations = scan_data.violations;
+    let scanned_files = scan_data.scanned_files;
+    let skipped_files = scan_data.skipped_files;
+    for f in &skipped_files {
+        println!("Skipped unreadable file: {}", f.display());
+    }
     violations.sort_by(|a, b| {
         (&a.path, a.line_number, &a.matched_token).cmp(&(&b.path, b.line_number, &b.matched_token))
     });
@@ -404,10 +447,15 @@ fn handle_dry_run(
             } else {
                 entry_file_raw
             };
-            let in_scope = scanned_files.contains(&entry_file)
-                || scan_paths_canonical
+            let in_scope = if scanned_files.contains(&entry_file) {
+                true
+            } else if skipped_files.contains(&entry_file) {
+                false
+            } else {
+                scan_paths_canonical
                     .iter()
-                    .any(|sp| entry_file.starts_with(sp));
+                    .any(|sp| entry_file.starts_with(sp))
+            };
             if !in_scope {
                 return false; // not in scan scope — not stale
             }

@@ -64,10 +64,10 @@ def test_no_space_after_hash_nosec_not_detected(tmp_path):
 
 
 @pytest.mark.xfail(reason=XFAIL_WHITESPACE_VARIANT)
-def test_extra_space_after_hash_noqa_not_detected(tmp_path):
-    """#  noqa (extra space) is valid Flake8 suppression but shamefile misses it."""
+def test_extra_space_after_hash_nosec_not_detected(tmp_path):
+    """#  nosec (extra space) is valid Bandit suppression but shamefile misses it."""
     test_file = tmp_path / "test.py"
-    test_file.write_text("x = 1  #  noqa\n")
+    test_file.write_text("x = dangerous_call()  #  nosec\n")
 
     result = run_shamefile(tmp_path)
 

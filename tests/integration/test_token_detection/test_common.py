@@ -1,5 +1,7 @@
 import pytest
-from conftest import PYTHON_TOKENS, XFAIL_STRING_DETECTION, run_shamefile
+from conftest import LANGUAGES, XFAIL_STRING_DETECTION, run_shamefile
+
+PYTHON_TOKENS = LANGUAGES["Python"]["tokens"]
 
 
 def test_token_with_error_code(tmp_path):
@@ -50,7 +52,6 @@ def test_token_inside_string_is_not_detected(tmp_path):
     assert "# noqa" not in result.stdout
 
 
-@pytest.mark.xfail(reason="scanner has no extension filter — scans all files including non-code")
 def test_non_code_files_not_scanned(tmp_path):
     """Tokens in non-code files (.md, .json) should not be detected."""
     (tmp_path / "README.md").write_text("Use `# noqa` to suppress linting warnings.\n")

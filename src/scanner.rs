@@ -1,9 +1,6 @@
-use crate::ShamefileError;
-use crate::tokens::get_token_regex;
-use grep::regex::RegexMatcher;
-use grep::searcher::Searcher;
-use grep::searcher::sinks::UTF8;
+use crate::languages;
 use ignore::WalkBuilder;
+use regex::Regex;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
@@ -19,15 +16,22 @@ pub struct Violation {
 pub struct ScanResult {
     pub violations: Vec<Violation>,
     pub scanned_files: HashSet<PathBuf>,
+    pub skipped_files: HashSet<PathBuf>,
 }
 
 /// Scan a directory for tracked tokens.
-pub fn scan(root_path: &Path, hidden: bool) -> Result<ScanResult, ShamefileError> {
-    let pattern = get_token_regex();
-    let matcher = RegexMatcher::new(&pattern)?;
-    let mut searcher = Searcher::new();
+pub fn scan(root_path: &Path, hidden: bool) -> Result<ScanResult, ignore::Error> {
     let mut violations = Vec::new();
     let mut scanned_files = HashSet::new();
+    let mut skipped_files = HashSet::new();
+
+    let lang_matchers: Vec<_> = languages::LANGUAGES
+        .iter()
+        .map(|lang| {
+            let re = Regex::new(&lang.token_regex()).expect("Language token regex must compile");
+            (lang, re)
+        })
+        .collect();
 
     let walker = WalkBuilder::new(root_path).hidden(!hidden).build();
 
@@ -38,30 +42,48 @@ pub fn scan(root_path: &Path, hidden: bool) -> Result<ScanResult, ShamefileError
         }
 
         let path = entry.path();
+        let ext = path.extension().and_then(|e| e.to_str()).unwrap_or("");
+        let (lang, re) = match lang_matchers
+            .iter()
+            .find(|(l, _)| l.extensions.contains(&ext))
+        {
+            Some(pair) => pair,
+            None => continue,
+        };
+
+        let content = match std::fs::read_to_string(path) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Warning: skipping {}: {}", path.display(), e);
+                skipped_files.insert(path.to_path_buf());
+                continue;
+            }
+        };
+
         scanned_files.insert(path.to_path_buf());
 
-        let sink = UTF8(|lnum, line| {
-            for token in crate::tokens::TRACKED_TOKENS
+        for (line_idx, line) in content.lines().enumerate() {
+            if !re.is_match(line) {
+                continue;
+            }
+            for token in lang
+                .tokens
                 .iter()
                 .filter(|&&t| line.to_ascii_lowercase().contains(&t.to_ascii_lowercase()))
             {
                 violations.push(Violation {
                     path: path.to_path_buf(),
-                    line_number: lnum as u32,
+                    line_number: (line_idx + 1) as u32,
                     line_content: line.to_string(),
                     matched_token: token.to_string(),
                 });
             }
-            Ok(true)
-        });
-
-        if let Err(e) = searcher.search_path(&matcher, path, sink) {
-            eprintln!("Warning: skipping {}: {}", path.display(), e);
         }
     }
 
     Ok(ScanResult {
         violations,
         scanned_files,
+        skipped_files,
     })
 }

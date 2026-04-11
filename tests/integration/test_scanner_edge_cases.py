@@ -45,6 +45,8 @@ def test_permission_denied_file_skipped_with_warning(tmp_path):
 
         assert result.returncode < SIGNAL_EXIT_CODE, "process killed by signal"
         assert "warning" in result.stderr.lower() or "skipping" in result.stderr.lower()
+        assert "Skipped unreadable file" in result.stdout
+        assert "secret.py" in result.stdout
 
         registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
         locations = [e["location"] for e in registry["entries"]]
@@ -53,3 +55,28 @@ def test_permission_denied_file_skipped_with_warning(tmp_path):
         assert not any("secret.py" in loc for loc in locations)
     finally:
         secret.chmod(0o644)
+
+
+def test_unreadable_file_does_not_remove_existing_entries(tmp_path):
+    """An unreadable file should not cause its existing registry entries to be removed."""
+    target = tmp_path / "target.py"
+    target.write_text("x = 1  # noqa\n")
+
+    # First run: create registry with entry
+    result = run_shamefile(tmp_path)
+    assert result.returncode == 1
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    registry["entries"][0]["why"] = "justified"
+    (tmp_path / "shamefile.yaml").write_text(yaml.dump(registry))
+
+    # Make file unreadable
+    target.chmod(0o000)
+    try:
+        # Second run: file is unreadable but entry should survive
+        result = run_shamefile(tmp_path)
+        registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+        assert any("target.py" in e["location"] for e in registry["entries"]), (
+            "Entry for unreadable file was removed"
+        )
+    finally:
+        target.chmod(0o644)

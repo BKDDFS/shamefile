@@ -15,7 +15,6 @@ path = "src/lib.rs"
 anyhow = "1.0.101"
 chrono = { version = "0.4.43", features = ["serde", "clock"] }
 clap = { version = "4.5.57", features = ["derive"] }
-grep = "0.4.1"
 ignore = "0.4.25"
 regex = "1.12.3"
 regex-syntax = "0.8.9"
