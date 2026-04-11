@@ -1,8 +1,4 @@
-import pytest
-from conftest import (
-    XFAIL_WHITESPACE_VARIANT,
-    run_shamefile,
-)
+from conftest import run_shamefile
 
 
 def test_token_inside_docstring_is_not_detected(tmp_path):
@@ -82,9 +78,8 @@ def test_case_insensitive_pragma_detected(tmp_path):
     assert "New suppression detected" in result.stdout
 
 
-@pytest.mark.xfail(reason=XFAIL_WHITESPACE_VARIANT)
-def test_no_space_after_hash_nosec_not_detected(tmp_path):
-    """#nosec (no space after #) is valid Bandit suppression but shamefile misses it."""
+def test_no_space_after_hash_nosec_detected(tmp_path):
+    """#nosec (no space after #) is valid Bandit suppression and should be detected."""
     test_file = tmp_path / "test.py"
     test_file.write_text("x = dangerous_call()  #nosec\n")
 
@@ -94,9 +89,8 @@ def test_no_space_after_hash_nosec_not_detected(tmp_path):
     assert "New suppression detected" in result.stdout
 
 
-@pytest.mark.xfail(reason=XFAIL_WHITESPACE_VARIANT)
-def test_extra_space_after_hash_nosec_not_detected(tmp_path):
-    """#  nosec (extra space) is valid Bandit suppression but shamefile misses it."""
+def test_extra_space_after_hash_nosec_detected(tmp_path):
+    """#  nosec (extra space) is valid Bandit suppression and should be detected."""
     test_file = tmp_path / "test.py"
     test_file.write_text("x = dangerous_call()  #  nosec\n")
 

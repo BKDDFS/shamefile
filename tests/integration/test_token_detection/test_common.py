@@ -36,7 +36,7 @@ def test_token_with_trailing_text(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "# nosec" in result.stdout
+    assert "nosec" in result.stdout
 
 
 def test_token_inside_string_is_not_detected(tmp_path):

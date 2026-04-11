@@ -119,7 +119,7 @@ def test_stale_removed_and_new_added_same_run(tmp_path):
     registry_content = registry.read_text()
     assert "# noqa" not in registry_content
     assert "# type: ignore" in registry_content
-    assert "# nosec" in registry_content
+    assert "nosec" in registry_content
     assert "Removing stale entry" in result.stdout
     assert "New suppression detected" in result.stdout
 

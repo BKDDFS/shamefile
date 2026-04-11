@@ -17,7 +17,7 @@ LANGUAGES = {
             "# pytype: disable",
             "# pyre-ignore",
             "# pyre-fixme",
-            "# nosec",
+            "nosec",
             "# pragma: no cover",
             "# fmt: off",
             "# fmt: skip",
@@ -73,11 +73,6 @@ TOKEN_PARAMS = [
 EXTENSION_PARAMS = [
     (cfg["tokens"][0], f".{ext}") for cfg in LANGUAGES.values() for ext in cfg["extensions"]
 ]
-
-
-XFAIL_WHITESPACE_VARIANT = (
-    "Python-only: Flake8, Bandit accept whitespace variants but shamefile uses exact match"
-)
 
 
 def run_shamefile(cwd, *args):

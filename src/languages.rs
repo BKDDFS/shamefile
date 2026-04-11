@@ -35,7 +35,7 @@ pub static LANGUAGES: &[Language] = &[
             "# pytype: disable",  // Pytype
             "# pyre-ignore",      // Pyre
             "# pyre-fixme",       // Pyre
-            "# nosec",            // Bandit
+            "nosec",              // Bandit
             "# pragma: no cover", // Coverage.py
             "# fmt: off",         // Black / Ruff
             "# fmt: skip",        // Black / Ruff

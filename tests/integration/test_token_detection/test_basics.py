@@ -34,7 +34,7 @@ def test_detects_in_nested_dirs(tmp_path):
     assert "Found 3 suppressions in code" in result.stdout
     assert "# noqa" in result.stdout
     assert "# type: ignore" in result.stdout
-    assert "# nosec" in result.stdout
+    assert "nosec" in result.stdout
 
 
 def test_ignores_gitignored_files(tmp_path):
