@@ -124,9 +124,7 @@ def test_delete_registry_and_rerun_behaves_as_first_run(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
-    subprocess.run(
-        ["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True, check=True
-    )
+    subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True, check=True)
 
     # First run — creates registry
     run_shamefile(tmp_path)

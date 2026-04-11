@@ -47,16 +47,13 @@ LANGUAGE_TOKENS = {
 }
 
 TOKEN_PARAMS = [
-    (token, extension)
-    for extension, tokens in LANGUAGE_TOKENS.items()
-    for token in tokens
+    (token, extension) for extension, tokens in LANGUAGE_TOKENS.items() for token in tokens
 ]
 
 
 XFAIL_STRING_DETECTION = "grep-based scanner doesn't understand language syntax"
 XFAIL_WHITESPACE_VARIANT = (
-    "Python-only: Flake8, Bandit accept whitespace variants but "
-    "shamefile uses exact match"
+    "Python-only: Flake8, Bandit accept whitespace variants but shamefile uses exact match"
 )
 XFAIL_BLOCK_COMMENT = "shamefile only tracks // comment style, not /* */ block comments"
 

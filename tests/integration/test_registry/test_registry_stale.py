@@ -143,5 +143,6 @@ def test_multiple_stale_entries_removed_at_once(tmp_path):
 
     result = run_shamefile(tmp_path)
 
-    assert result.stdout.count("Removing stale entry") == 3
+    stale_count = 3  # a.py, b.py, c.py all deleted
+    assert result.stdout.count("Removing stale entry") == stale_count
     assert result.returncode == 1

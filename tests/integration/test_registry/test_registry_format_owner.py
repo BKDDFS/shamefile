@@ -237,9 +237,7 @@ def test_mixed_committed_and_uncommitted_owners(tmp_path):
 
     (tmp_path / "old.py").write_text("x = 1  # noqa\n")
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
-    subprocess.run(
-        ["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True, check=True
-    )
+    subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True, check=True)
 
     # Switch to Bob
     subprocess.run(
@@ -262,7 +260,8 @@ def test_mixed_committed_and_uncommitted_owners(tmp_path):
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entries = registry["entries"]
-    assert len(entries) == 2
+    expected_entries = 2  # old.py + new.py
+    assert len(entries) == expected_entries
 
     by_file = {e["location"].split(":")[0]: e for e in entries}
     assert by_file["old.py"]["owner"] == "Alice <alice@test.com>"
@@ -288,14 +287,10 @@ def test_staged_uncommitted_file_not_attributed_to_not_committed_yet(tmp_path):
     # Need at least one commit for blame to run (otherwise blame exits immediately)
     (tmp_path / "init.txt").write_text("init\n")
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
-    subprocess.run(
-        ["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True, check=True
-    )
+    subprocess.run(["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True, check=True)
 
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
-    subprocess.run(
-        ["git", "add", "test.py"], cwd=tmp_path, capture_output=True, check=True
-    )
+    subprocess.run(["git", "add", "test.py"], cwd=tmp_path, capture_output=True, check=True)
     # Staged but NOT committed
 
     run_shamefile(tmp_path)

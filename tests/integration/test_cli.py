@@ -27,9 +27,7 @@ def test_shamefile_created_at_git_root(tmp_path):
     src.mkdir()
     (src / "test.py").write_text("x = 1  # noqa\n")
 
-    subprocess.run(
-        [BINARY_PATH, "me", "."], capture_output=True, text=True, cwd=src, check=False
-    )
+    subprocess.run([BINARY_PATH, "me", "."], capture_output=True, text=True, cwd=src, check=False)
 
     assert (tmp_path / "shamefile.yaml").exists()
     assert not (src / "shamefile.yaml").exists()

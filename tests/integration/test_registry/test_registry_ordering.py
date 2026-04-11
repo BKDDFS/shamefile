@@ -72,9 +72,15 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
         registry,
         [
             make_entry(
-                f"{tmp_path}/test.py:1", token="# type: ignore", why="reason ti"  # noqa: S106
+                f"{tmp_path}/test.py:1",
+                token="# type: ignore",  # noqa: S106
+                why="reason ti",
             ),
-            make_entry(f"{tmp_path}/test.py:1", token="# noqa", why="reason noqa"),  # noqa: S106
+            make_entry(
+                f"{tmp_path}/test.py:1",
+                token="# noqa",  # noqa: S106
+                why="reason noqa",
+            ),
         ],
     )
 
@@ -127,7 +133,8 @@ def test_ordering_preserved_after_stale_removal(tmp_path):
     run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
-    assert len(entries) == 2
+    expected_entries = 2  # a.py + z.py
+    assert len(entries) == expected_entries
     assert "a.py" in entries[0]["location"]
     assert "z.py" in entries[1]["location"]
 

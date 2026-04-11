@@ -31,6 +31,8 @@ select = ["ALL"]
 ignore = [
     "COM812",  # trailing comma style — conflicts with ruff format
     "ISC001",  # implicit string concat — conflicts with ruff format
+    "D203",    # incompatible with D211 (no-blank-line-before-class)
+    "D213",    # incompatible with D212 (multi-line-summary-first-line)
 ]
 
 [tool.ruff.lint.per-file-ignores]

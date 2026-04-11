@@ -210,7 +210,8 @@ def test_yaml_scalar_anchor_resolved(tmp_path):
 
     assert result.returncode == 0
     data = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
-    assert len(data["entries"]) == 2
+    expected_entries = 2  # two tokens in file
+    assert len(data["entries"]) == expected_entries
     assert data["entries"][1]["owner"] == "Alice"
 
 

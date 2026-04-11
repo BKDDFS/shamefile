@@ -27,9 +27,7 @@ def test_shamefile_yaml_not_scanned(tmp_path):
 
     # Fill why with text containing a suppression token
     content = registry.read_text()
-    registry.write_text(
-        content.replace("why: ''", "why: 'suppressed with # noqa because legacy'")
-    )
+    registry.write_text(content.replace("why: ''", "why: 'suppressed with # noqa because legacy'"))
 
     result = run_shamefile(tmp_path)
 

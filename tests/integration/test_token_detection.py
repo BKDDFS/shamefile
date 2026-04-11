@@ -4,7 +4,7 @@ import pytest
 from conftest import LANGUAGE_TOKENS, TOKEN_PARAMS, run_shamefile
 
 
-@pytest.mark.parametrize("token, extension", TOKEN_PARAMS)
+@pytest.mark.parametrize(("token", "extension"), TOKEN_PARAMS)
 def test_detects_token(token, extension, tmp_path):
     test_file = tmp_path / f"test{extension}"
     test_file.write_text(f"x = 1  {token}\n")

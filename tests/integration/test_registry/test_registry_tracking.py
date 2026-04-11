@@ -29,9 +29,7 @@ def test_created_at_preserved_after_filling_why(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     run_shamefile(tmp_path)
-    original_created_at = yaml.safe_load(registry.read_text())["entries"][0][
-        "created_at"
-    ]
+    original_created_at = yaml.safe_load(registry.read_text())["entries"][0]["created_at"]
 
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))
@@ -74,7 +72,8 @@ def test_same_token_on_multiple_lines_tracked_independently(tmp_path):
     # First run — creates two entries
     run_shamefile(tmp_path)
     content = registry.read_text()
-    assert content.count("# noqa") == 2
+    noqa_count = 2  # line 1 + line 2
+    assert content.count("# noqa") == noqa_count
 
     # Justify only the first one (line 1)
     registry.write_text(content.replace("why: ''", "why: 'Justified'", 1))
@@ -83,7 +82,7 @@ def test_same_token_on_multiple_lines_tracked_independently(tmp_path):
 
     assert result.returncode == 1  # second entry still unjustified
     registry_content = registry.read_text()
-    assert registry_content.count("# noqa") == 2  # both still tracked
+    assert registry_content.count("# noqa") == noqa_count  # both still tracked
     assert "Justified" in registry_content  # first entry preserved
 
 
@@ -99,9 +98,7 @@ def test_duplicate_token_on_same_line_counted_once(tmp_path):
 
 def test_multiple_files_multiple_tokens_multiple_lines(tmp_path):
     """Different tokens across files and lines should all be tracked independently."""
-    (tmp_path / "a.py").write_text(
-        "x = 1  # noqa\ny = 2  # noqa\nz = 3  # type: ignore\n"
-    )
+    (tmp_path / "a.py").write_text("x = 1  # noqa\ny = 2  # noqa\nz = 3  # type: ignore\n")
     (tmp_path / "b.py").write_text("a = 1  # nosec\n")
     (tmp_path / "c.js").write_text("b = 2  // eslint-disable-line no-unused-vars\n")
     registry = tmp_path / "shamefile.yaml"
@@ -156,6 +153,7 @@ def test_different_tokens_same_line_independent_entries(tmp_path):
     entries = yaml.safe_load(registry.read_text())["entries"]
     tokens = {e["token"] for e in entries}
 
-    assert len(entries) == 2
+    expected_entries = 2  # two tokens on separate lines
+    assert len(entries) == expected_entries
     assert "# noqa" in tokens
     assert "# type: ignore" in tokens

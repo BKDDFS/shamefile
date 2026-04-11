@@ -10,9 +10,7 @@ from conftest import (
 def test_token_inside_docstring_is_not_detected(tmp_path):
     """Token inside a docstring is not a real suppression."""
     test_file = tmp_path / "test.py"
-    test_file.write_text(
-        'def foo():\n    """Use # noqa for suppression."""\n    pass\n'
-    )
+    test_file.write_text('def foo():\n    """Use # noqa for suppression."""\n    pass\n')
 
     result = run_shamefile(tmp_path)
 
