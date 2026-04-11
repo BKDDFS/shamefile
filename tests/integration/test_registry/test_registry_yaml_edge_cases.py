@@ -166,6 +166,57 @@ def test_non_utc_timezone_normalized_to_utc(tmp_path):
     assert "04:30" in created_at
 
 
+def test_yaml_anchor_merge_key_fails_with_clear_error(tmp_path):
+    """YAML merge keys (<<: *alias) are not supported by serde_yaml — should fail without panic."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\ny = 2  # type: ignore\n")
+    (tmp_path / "shamefile.yaml").write_text(
+        "config: {}\n"
+        "entries:\n"
+        "  - &base\n"
+        "    location: test.py:1\n"
+        "    token: '# noqa'\n"
+        "    owner: Alice\n"
+        "    created_at: '2024-01-15T00:00:00Z'\n"
+        "    why: Legacy\n"
+        "  - <<: *base\n"
+        "    location: test.py:2\n"
+        "    token: '# type: ignore'\n"
+    )
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "Failed to load registry" in result.stderr
+    assert "missing field" in result.stderr
+
+
+def test_yaml_scalar_anchor_resolved(tmp_path):
+    """YAML scalar anchors (&name / *name) are resolved by serde_yaml — entries load correctly."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\ny = 2  # type: ignore\n")
+    (tmp_path / "shamefile.yaml").write_text(
+        "config: {}\n"
+        "entries:\n"
+        "  - location: test.py:1\n"
+        "    token: '# noqa'\n"
+        "    owner: &alice Alice\n"
+        "    created_at: '2024-01-15T00:00:00Z'\n"
+        "    why: Legacy\n"
+        "  - location: test.py:2\n"
+        "    token: '# type: ignore'\n"
+        "    owner: *alice\n"
+        "    created_at: '2024-01-15T00:00:00Z'\n"
+        "    why: Legacy\n"
+    )
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    data = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert len(data["entries"]) == 2
+    assert data["entries"][1]["owner"] == "Alice"
+
+
+
 def test_duplicate_entries_rejected(tmp_path):
     """Duplicate entries (same location + token) should be rejected with a clear error."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
