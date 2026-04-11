@@ -1,5 +1,5 @@
 use crate::ShamefileError;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
@@ -25,12 +25,31 @@ pub struct Entry {
     pub token: String,
 
     pub owner: String,
+    #[serde(deserialize_with = "deserialize_created_at")]
     pub created_at: DateTime<Utc>,
 
     /// The reason why this suppression exists.
     /// If empty, it means justification is missing.
     #[serde(deserialize_with = "deserialize_why")]
     pub why: String,
+}
+
+fn deserialize_created_at<'de, D>(deserializer: D) -> Result<DateTime<Utc>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let s = String::deserialize(deserializer)?;
+    if let Ok(dt) = s.parse::<DateTime<Utc>>() {
+        return Ok(dt);
+    }
+    if let Ok(date) = NaiveDate::parse_from_str(&s, "%Y-%m-%d")
+        && let Some(dt) = date.and_hms_opt(0, 0, 0)
+    {
+        return Ok(Utc.from_utc_datetime(&dt));
+    }
+    Err(serde::de::Error::custom(format!(
+        "invalid created_at: '{s}' — expected RFC 3339 (e.g. '2024-01-15T00:00:00Z') or date (e.g. '2024-01-15')"
+    )))
 }
 
 fn deserialize_why<'de, D>(deserializer: D) -> Result<String, D::Error>
@@ -153,7 +172,7 @@ impl Registry {
                 .then(a.token.cmp(&b.token))
         });
         let content = serde_yaml::to_string(self)?;
-        fs::write(path, content).map_err(ShamefileError::RegistryReadError)?;
+        fs::write(path, content).map_err(ShamefileError::RegistryWriteError)?;
         Ok(())
     }
 }

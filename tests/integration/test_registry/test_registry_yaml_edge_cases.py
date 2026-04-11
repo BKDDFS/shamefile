@@ -245,3 +245,43 @@ def test_duplicate_entries_rejected(tmp_path):
     # Entries start at lines 3 and 8 of the fixture written above.
     assert "shamefile.yaml:3" in output
     assert "shamefile.yaml:8" in output
+
+
+def test_plain_date_in_created_at_accepted(tmp_path):
+    """Plain date like '2024-01-15' in created_at should be accepted as midnight UTC."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "shamefile.yaml").write_text(
+        "config: {}\n"
+        "entries:\n"
+        "  - location: 'test.py:1'\n"
+        "    token: '# noqa'\n"
+        "    owner: 'Alice'\n"
+        "    created_at: '2024-01-15'\n"
+        "    why: 'Legacy'\n"
+    )
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    assert "Failed to load registry" not in result.stderr
+
+
+def test_invalid_date_in_created_at_shows_helpful_error(tmp_path):
+    """Invalid created_at should produce error pointing at the field with format examples."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "shamefile.yaml").write_text(
+        "config: {}\n"
+        "entries:\n"
+        "  - location: 'test.py:1'\n"
+        "    token: '# noqa'\n"
+        "    owner: 'Alice'\n"
+        "    created_at: 'not-a-date'\n"
+        "    why: 'Legacy'\n"
+    )
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "created_at" in result.stderr
+    assert "Failed to load registry" in result.stderr
+    assert "at line 3" in result.stderr

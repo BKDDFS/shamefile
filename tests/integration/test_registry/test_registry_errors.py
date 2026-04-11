@@ -30,3 +30,20 @@ def test_empty_shamefile_yaml(tmp_path):
     # Should work — empty YAML deserializes to default registry
     assert "Found 1 suppressions" in result.stdout
     assert "New suppression detected" in result.stdout
+
+
+def test_readonly_shamefile_shows_save_error(tmp_path):
+    """Read-only shamefile.yaml should produce 'save' error, not 'read' error."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+    registry.write_text("config: {}\nentries: []\n")
+    registry.chmod(0o444)
+
+    try:
+        result = run_shamefile(tmp_path)
+
+        assert result.returncode != 0
+        assert "read" not in result.stderr.lower()
+        assert "save" in result.stderr.lower() or "permission" in result.stderr.lower()
+    finally:
+        registry.chmod(0o644)

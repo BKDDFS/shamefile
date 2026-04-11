@@ -5,6 +5,9 @@ pub enum ShamefileError {
     #[error("Failed to read shamefile registry")]
     RegistryReadError(#[source] io::Error),
 
+    #[error("Failed to save shamefile registry")]
+    RegistryWriteError(io::Error),
+
     #[error("Failed to parse shamefile registry")]
     RegistryParseError(#[from] serde_yaml::Error),
 
