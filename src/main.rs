@@ -58,6 +58,35 @@ fn handle_me(scan_path: &Path, dry_run: bool) -> Result<()> {
     }
 }
 
+/// Filters out shamefile.yaml from violations and normalizes paths relative to registry_dir.
+fn filter_and_normalize_violations(
+    violations: Vec<scanner::Violation>,
+    config_path: &Path,
+    registry_dir: &Path,
+) -> Result<Vec<scanner::Violation>> {
+    let registry_dir_canonical =
+        std::fs::canonicalize(registry_dir).context("Failed to canonicalize registry directory")?;
+    let config_path_canonical =
+        std::fs::canonicalize(config_path).unwrap_or_else(|_| config_path.to_path_buf());
+
+    Ok(violations
+        .into_iter()
+        .filter_map(|mut v| {
+            let v_canonical = std::fs::canonicalize(&v.path).ok()?;
+
+            if v_canonical == config_path_canonical {
+                return None;
+            }
+
+            if let Ok(relative) = v_canonical.strip_prefix(&registry_dir_canonical) {
+                v.path = relative.to_path_buf();
+            }
+
+            Some(v)
+        })
+        .collect())
+}
+
 fn handle_normal(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> Result<()> {
     // 1. Load or create registry
     let is_first_run = !config_path.exists();
@@ -71,33 +100,7 @@ fn handle_normal(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> R
     // 2. Scan for violations
     println!("Scanning {} for suppressions...", scan_path.display());
     let all_violations = scanner::scan(scan_path).context("Failed to scan files")?;
-
-    // 2a. Rebase violations to be relative to registry_dir and filter shamefile.yaml
-    let registry_dir_canonical = std::fs::canonicalize(registry_dir)
-        .context("Failed to canonicalize registry directory")?;
-    let config_path_canonical = std::fs::canonicalize(config_path)
-        .unwrap_or_else(|_| config_path.to_path_buf());
-
-    let mut violations: Vec<_> = all_violations
-        .into_iter()
-        .filter_map(|mut v| {
-            // Skip shamefile.yaml itself
-            if let Ok(v_canonical) = std::fs::canonicalize(&v.path) {
-                if v_canonical == config_path_canonical {
-                    return None;
-                }
-            }
-
-            // Rebase path to be relative to registry_dir
-            if let Ok(v_absolute) = std::fs::canonicalize(&v.path) {
-                if let Ok(relative) = v_absolute.strip_prefix(&registry_dir_canonical) {
-                    v.path = relative.to_path_buf();
-                }
-            }
-
-            Some(v)
-        })
-        .collect();
+    let violations = filter_and_normalize_violations(all_violations, config_path, registry_dir)?;
 
     println!("Found {} suppressions in code.", violations.len());
 
@@ -131,11 +134,11 @@ fn handle_normal(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> R
                     shamefile::git::get_git_blame_author(
                         &violation_path_str,
                         violation.line_number,
-                        scan_path,
+                        registry_dir,
                     )
-                    .unwrap_or_else(|| shamefile::git::get_git_current_user(scan_path))
+                    .unwrap_or_else(|| shamefile::git::get_git_current_user(registry_dir))
                 } else {
-                    shamefile::git::get_git_current_user(scan_path)
+                    shamefile::git::get_git_current_user(registry_dir)
                 },
                 created_at: Utc::now(),
                 why: String::new(),
@@ -232,33 +235,7 @@ fn handle_dry_run(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> 
         scan_path.display()
     );
     let all_violations = scanner::scan(scan_path).context("Failed to scan files")?;
-
-    // 2a. Rebase violations to be relative to registry_dir and filter shamefile.yaml
-    let registry_dir_canonical = std::fs::canonicalize(registry_dir)
-        .context("Failed to canonicalize registry directory")?;
-    let config_path_canonical = std::fs::canonicalize(config_path)
-        .unwrap_or_else(|_| config_path.to_path_buf());
-
-    let violations: Vec<_> = all_violations
-        .into_iter()
-        .filter_map(|mut v| {
-            // Skip shamefile.yaml itself
-            if let Ok(v_canonical) = std::fs::canonicalize(&v.path) {
-                if v_canonical == config_path_canonical {
-                    return None;
-                }
-            }
-
-            // Rebase path to be relative to registry_dir
-            if let Ok(v_absolute) = std::fs::canonicalize(&v.path) {
-                if let Ok(relative) = v_absolute.strip_prefix(&registry_dir_canonical) {
-                    v.path = relative.to_path_buf();
-                }
-            }
-
-            Some(v)
-        })
-        .collect();
+    let violations = filter_and_normalize_violations(all_violations, config_path, registry_dir)?;
 
     println!("Found {} suppressions in code.", violations.len());
 

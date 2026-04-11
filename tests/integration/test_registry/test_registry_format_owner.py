@@ -13,10 +13,10 @@ NO_GLOBAL_GIT = {
 }
 
 
-def run_shamefile_no_global_git(*args):
+def run_shamefile_no_global_git(cwd, *args):
     """Run shamefile with global git config disabled."""
     return subprocess.run(
-        [BINARY_PATH, "me", *args], capture_output=True, text=True, env=NO_GLOBAL_GIT
+        [BINARY_PATH, "me", *args], capture_output=True, text=True, env=NO_GLOBAL_GIT, cwd=str(cwd)
     )
 
 
@@ -55,6 +55,45 @@ def test_owner_from_git_blame_on_first_run(tmp_path):
     assert alice_entry["owner"] == "Alice <alice@test.com>"
 
 
+def test_owner_from_git_blame_scanning_subdirectory(tmp_path):
+    """'shame me src' from git root should still attribute owner via git blame."""
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "alice@test.com"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    src = tmp_path / "src"
+    src.mkdir()
+    (src / "app.py").write_text("x = 1  # noqa\n")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True
+    )
+
+    # Switch to different user
+    subprocess.run(
+        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "bob@test.com"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    result = subprocess.run(
+        [BINARY_PATH, "me", "src"], capture_output=True, text=True, cwd=tmp_path
+    )
+
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entry = registry["entries"][0]
+    assert entry["owner"] == "Alice <alice@test.com>"
+
+
 def test_owner_fallback_uncommitted_file(tmp_path):
     """Uncommitted file on first run — git blame fails, fallback to git config user."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
@@ -85,7 +124,7 @@ def test_owner_no_git_repo(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile_no_global_git(str(tmp_path))
+    run_shamefile_no_global_git(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]
@@ -104,7 +143,7 @@ def test_owner_missing_email_only(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile_no_global_git(str(tmp_path))
+    run_shamefile_no_global_git(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]
@@ -123,7 +162,7 @@ def test_owner_missing_name_only(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile_no_global_git(str(tmp_path))
+    run_shamefile_no_global_git(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]
@@ -137,7 +176,7 @@ def test_owner_missing_name_and_email(tmp_path):
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
 
-    run_shamefile_no_global_git(str(tmp_path))
+    run_shamefile_no_global_git(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]

@@ -66,7 +66,12 @@ impl Registry {
 
     pub fn load(path: &Path) -> Result<Self, ShamefileError> {
         let content = fs::read_to_string(path).map_err(ShamefileError::RegistryReadError)?;
-        let registry: Registry = serde_yaml::from_str(&content)?;
+        let mut registry: Registry = serde_yaml::from_str(&content)?;
+        for entry in &mut registry.entries {
+            if let Some(stripped) = entry.location.strip_prefix("./") {
+                entry.location = stripped.to_string();
+            }
+        }
         Ok(registry)
     }
 
