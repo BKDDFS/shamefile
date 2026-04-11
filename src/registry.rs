@@ -80,7 +80,7 @@ fn extract_entry_start_lines(content: &str) -> Vec<usize> {
             in_entries = false;
             continue;
         }
-        if in_entries && (trimmed.starts_with("- ") || trimmed == "-") {
+        if in_entries && trimmed.starts_with("- location:") {
             lines.push(line_no);
         }
     }
@@ -111,9 +111,9 @@ impl Registry {
         }
 
         let entry_lines = extract_entry_start_lines(&content);
-        let mut groups: BTreeMap<(&str, &str), Vec<usize>> = BTreeMap::new();
+        let mut groups: BTreeMap<(&str, &str), Vec<Option<usize>>> = BTreeMap::new();
         for (idx, entry) in registry.entries.iter().enumerate() {
-            let line_no = entry_lines.get(idx).copied().unwrap_or(0);
+            let line_no = entry_lines.get(idx).copied();
             groups
                 .entry((entry.location.as_str(), entry.token.as_str()))
                 .or_default()
@@ -126,9 +126,13 @@ impl Registry {
             .map(|((loc, tok), lines)| {
                 let refs: Vec<String> = lines
                     .iter()
-                    .map(|l| format!("{}:{}", path_display, l))
+                    .filter_map(|l| l.map(|n| format!("{}:{}", path_display, n)))
                     .collect();
-                format!("'{}' at {} ({})", tok, loc, refs.join(", "))
+                if refs.is_empty() {
+                    format!("'{}' at {}", tok, loc)
+                } else {
+                    format!("'{}' at {} ({})", tok, loc, refs.join(", "))
+                }
             })
             .collect();
         if !duplicates.is_empty() {
