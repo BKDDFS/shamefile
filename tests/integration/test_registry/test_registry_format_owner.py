@@ -15,7 +15,12 @@ NO_GLOBAL_GIT = {
 def run_shamefile_no_global_git(cwd, *args):
     """Run shamefile with global git config disabled."""
     return subprocess.run(
-        [BINARY_PATH, "me", *args], capture_output=True, text=True, env=NO_GLOBAL_GIT, cwd=str(cwd), check=False
+        [BINARY_PATH, "me", *args],
+        capture_output=True,
+        text=True,
+        env=NO_GLOBAL_GIT,
+        cwd=str(cwd),
+        check=False,
     )
 
 
@@ -23,7 +28,10 @@ def test_owner_from_git_blame_on_first_run(tmp_path):
     """On first shamefile creation, owner should come from git blame, not current user."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Alice"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
@@ -36,12 +44,18 @@ def test_owner_from_git_blame_on_first_run(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "commit", "-m", "initial"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
 
     # Switch to different user (simulates someone else running shamefile)
     subprocess.run(
-        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Bob"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "bob@test.com"],
@@ -60,7 +74,10 @@ def test_owner_from_git_blame_scanning_subdirectory(tmp_path):
     """'shame me src' from git root should still attribute owner via git blame."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Alice"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
@@ -74,12 +91,18 @@ def test_owner_from_git_blame_scanning_subdirectory(tmp_path):
     (src / "app.py").write_text("x = 1  # noqa\n")
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "commit", "-m", "initial"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
 
     # Switch to different user
     subprocess.run(
-        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Bob"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "bob@test.com"],
@@ -89,7 +112,11 @@ def test_owner_from_git_blame_scanning_subdirectory(tmp_path):
     )
 
     result = subprocess.run(
-        [BINARY_PATH, "me", "src"], capture_output=True, text=True, cwd=tmp_path, check=False
+        [BINARY_PATH, "me", "src"],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        check=False,
     )
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
@@ -101,7 +128,10 @@ def test_owner_fallback_uncommitted_file(tmp_path):
     """Uncommitted file on first run — git blame fails, fallback to git config user."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Bob"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "bob@test.com"],
@@ -193,7 +223,10 @@ def test_mixed_committed_and_uncommitted_owners(tmp_path):
     """First run: committed file gets blame owner, uncommitted gets current user."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Alice"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
@@ -210,7 +243,10 @@ def test_mixed_committed_and_uncommitted_owners(tmp_path):
 
     # Switch to Bob
     subprocess.run(
-        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Bob"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "bob@test.com"],
@@ -237,7 +273,10 @@ def test_staged_uncommitted_file_not_attributed_to_not_committed_yet(tmp_path):
     """Staged but uncommitted file should use fallback owner, not 'Not Committed Yet'."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Alice"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
@@ -254,7 +293,9 @@ def test_staged_uncommitted_file_not_attributed_to_not_committed_yet(tmp_path):
     )
 
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
-    subprocess.run(["git", "add", "test.py"], cwd=tmp_path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "add", "test.py"], cwd=tmp_path, capture_output=True, check=True
+    )
     # Staged but NOT committed
 
     run_shamefile(tmp_path)

@@ -13,7 +13,10 @@ def line_shifted_entry(tmp_path):
     # Init repo as Alice
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Alice"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
@@ -26,7 +29,10 @@ def line_shifted_entry(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "commit", "-m", "initial"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
 
     # First run — Alice's suppression, Alice as owner (via git blame)
@@ -39,7 +45,10 @@ def line_shifted_entry(tmp_path):
 
     # Switch to Bob
     subprocess.run(
-        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Bob"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "bob@test.com"],
@@ -88,7 +97,10 @@ def two_entries_shifted(tmp_path):
     """Create two entries, shift both lines, rerun, return (originals, updated)."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Alice"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
@@ -101,7 +113,10 @@ def two_entries_shifted(tmp_path):
     test_file.write_text("x = 1  # noqa\ny = 2  # type: ignore\n")
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "commit", "-m", "initial"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
 
     run_shamefile(tmp_path)
@@ -152,7 +167,10 @@ def test_large_line_shift(tmp_path):
     """Suppression shifting by many lines should still preserve why."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "config", "user.name", "Alice"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
@@ -165,7 +183,10 @@ def test_large_line_shift(tmp_path):
     test_file.write_text("x = 1  # noqa\n")
     subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True, check=True
+        ["git", "commit", "-m", "initial"],
+        cwd=tmp_path,
+        capture_output=True,
+        check=True,
     )
 
     run_shamefile(tmp_path)

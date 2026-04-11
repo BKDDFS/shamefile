@@ -30,9 +30,7 @@ def test_multiple_tokens_on_one_line(tmp_path):
 def test_token_with_trailing_text(tmp_path):
     """Token followed by extra text (e.g. '# nosec B324 -- not crypto') should be detected."""
     test_file = tmp_path / "test.py"
-    test_file.write_text(
-        "checksum = hashlib.md5(data).hexdigest()  # nosec B324\n"
-    )
+    test_file.write_text("checksum = hashlib.md5(data).hexdigest()  # nosec B324\n")
 
     result = run_shamefile(tmp_path)
 
@@ -52,7 +50,9 @@ def test_token_inside_string_is_not_detected(tmp_path):
     assert "# noqa" not in result.stdout
 
 
-@pytest.mark.xfail(reason="scanner has no extension filter — scans all files including non-code")
+@pytest.mark.xfail(
+    reason="scanner has no extension filter — scans all files including non-code"
+)
 def test_non_code_files_not_scanned(tmp_path):
     """Tokens in non-code files (.md, .json) should not be detected."""
     (tmp_path / "README.md").write_text("Use `# noqa` to suppress linting warnings.\n")

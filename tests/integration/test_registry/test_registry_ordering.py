@@ -19,7 +19,6 @@ def write_registry(path, entries):
     path.write_text(yaml.dump(data, default_flow_style=False, allow_unicode=True))
 
 
-
 def test_unsorted_entries_get_sorted_by_file(tmp_path):
     """Entries in wrong file order should be sorted after rerun."""
     (tmp_path / "a.py").write_text("x = 1  # noqa\n")
@@ -40,7 +39,6 @@ def test_unsorted_entries_get_sorted_by_file(tmp_path):
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert "a.py" in entries[0]["location"]
     assert "z.py" in entries[1]["location"]
-
 
 
 def test_unsorted_lines_get_sorted_within_file(tmp_path):
@@ -64,7 +62,6 @@ def test_unsorted_lines_get_sorted_within_file(tmp_path):
     assert entries[1]["location"].endswith(":3")
 
 
-
 def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
     """Multiple tokens on same line should be sorted alphabetically by token."""
     (tmp_path / "test.py").write_text("x = 1  # type: ignore  # noqa\n")
@@ -74,7 +71,9 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
     write_registry(
         registry,
         [
-            make_entry(f"{tmp_path}/test.py:1", token="# type: ignore", why="reason ti"),
+            make_entry(
+                f"{tmp_path}/test.py:1", token="# type: ignore", why="reason ti"
+            ),
             make_entry(f"{tmp_path}/test.py:1", token="# noqa", why="reason noqa"),
         ],
     )
@@ -84,7 +83,6 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
     entries = yaml.safe_load(registry.read_text())["entries"]
     tokens = [e["token"] for e in entries]
     assert tokens == sorted(tokens)
-
 
 
 def test_new_entry_inserted_in_sorted_position(tmp_path):
@@ -108,7 +106,6 @@ def test_new_entry_inserted_in_sorted_position(tmp_path):
     entries = yaml.safe_load(registry.read_text())["entries"]
     basenames = [e["location"].split("/")[-1] for e in entries]
     assert basenames[0] == "a.py:1"
-
 
 
 def test_ordering_preserved_after_stale_removal(tmp_path):

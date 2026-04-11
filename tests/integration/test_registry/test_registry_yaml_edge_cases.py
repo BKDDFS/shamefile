@@ -214,7 +214,6 @@ def test_yaml_scalar_anchor_resolved(tmp_path):
     assert data["entries"][1]["owner"] == "Alice"
 
 
-
 def test_duplicate_entries_rejected(tmp_path):
     """Duplicate entries (same location + token) should be rejected with a clear error."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")

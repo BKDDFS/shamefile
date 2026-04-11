@@ -29,7 +29,9 @@ def test_created_at_preserved_after_filling_why(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     run_shamefile(tmp_path)
-    original_created_at = yaml.safe_load(registry.read_text())["entries"][0]["created_at"]
+    original_created_at = yaml.safe_load(registry.read_text())["entries"][0][
+        "created_at"
+    ]
 
     content = registry.read_text()
     registry.write_text(content.replace("why: ''", "why: 'Legacy code'"))

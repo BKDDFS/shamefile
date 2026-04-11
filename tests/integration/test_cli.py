@@ -9,7 +9,11 @@ def test_dot_path_scans_current_directory(tmp_path):
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
 
     result = subprocess.run(
-        [BINARY_PATH, "me", "."], capture_output=True, text=True, cwd=tmp_path, check=False
+        [BINARY_PATH, "me", "."],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        check=False,
     )
 
     assert result.returncode == 1
@@ -23,7 +27,9 @@ def test_shamefile_created_at_git_root(tmp_path):
     src.mkdir()
     (src / "test.py").write_text("x = 1  # noqa\n")
 
-    subprocess.run([BINARY_PATH, "me", "."], capture_output=True, text=True, cwd=src, check=False)
+    subprocess.run(
+        [BINARY_PATH, "me", "."], capture_output=True, text=True, cwd=src, check=False
+    )
 
     assert (tmp_path / "shamefile.yaml").exists()
     assert not (src / "shamefile.yaml").exists()
@@ -36,7 +42,11 @@ def test_shamefile_created_in_cwd_without_git(tmp_path):
     (src / "test.py").write_text("x = 1  # noqa\n")
 
     subprocess.run(
-        [BINARY_PATH, "me", "src"], capture_output=True, text=True, cwd=tmp_path, check=False
+        [BINARY_PATH, "me", "src"],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        check=False,
     )
 
     assert (tmp_path / "shamefile.yaml").exists()
@@ -54,7 +64,11 @@ def test_scan_path_scopes_what_is_scanned(tmp_path):
     (other / "test.py").write_text("y = 2  # type: ignore\n")
 
     subprocess.run(
-        [BINARY_PATH, "me", "src"], capture_output=True, text=True, cwd=tmp_path, check=False
+        [BINARY_PATH, "me", "src"],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        check=False,
     )
 
     # shamefile.yaml should be in CWD with entries only from src/
@@ -73,7 +87,11 @@ def test_single_file_path_scans_that_file(tmp_path):
     (src / "utils.py").write_text("y = 2  # type: ignore\n")
 
     result = subprocess.run(
-        [BINARY_PATH, "me", "src/app.py"], capture_output=True, text=True, cwd=tmp_path, check=False
+        [BINARY_PATH, "me", "src/app.py"],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        check=False,
     )
 
     assert result.returncode == 1
@@ -91,7 +109,11 @@ def test_single_file_with_git_uses_git_root(tmp_path):
     (src / "app.py").write_text("x = 1  # noqa\n")
 
     subprocess.run(
-        [BINARY_PATH, "me", "app.py"], capture_output=True, text=True, cwd=src, check=False
+        [BINARY_PATH, "me", "app.py"],
+        capture_output=True,
+        text=True,
+        cwd=src,
+        check=False,
     )
 
     assert (tmp_path / "shamefile.yaml").exists()
@@ -105,7 +127,11 @@ def test_single_file_without_git_uses_cwd(tmp_path):
     (src / "app.py").write_text("x = 1  # noqa\n")
 
     subprocess.run(
-        [BINARY_PATH, "me", "src/app.py"], capture_output=True, text=True, cwd=tmp_path, check=False
+        [BINARY_PATH, "me", "src/app.py"],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        check=False,
     )
 
     assert (tmp_path / "shamefile.yaml").exists()
