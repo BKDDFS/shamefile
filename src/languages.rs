@@ -2,6 +2,8 @@ pub struct Language {
     pub name: &'static str,
     pub extensions: &'static [&'static str],
     pub tokens: &'static [&'static str],
+    pub grammar: fn() -> tree_sitter::Language,
+    pub comment_types: &'static [&'static str],
 }
 
 impl Language {
@@ -23,6 +25,8 @@ pub static LANGUAGES: &[Language] = &[
     Language {
         name: "Python",
         extensions: &["py"],
+        grammar: || tree_sitter_python::LANGUAGE.into(),
+        comment_types: &["comment"],
         tokens: &[
             "# noqa",             // Flake8 / Ruff
             "# pylint: disable",  // Pylint
@@ -44,6 +48,8 @@ pub static LANGUAGES: &[Language] = &[
     Language {
         name: "JavaScript",
         extensions: &["js", "jsx", "mjs", "cjs"],
+        grammar: || tree_sitter_javascript::LANGUAGE.into(),
+        comment_types: &["comment"],
         tokens: &[
             "// eslint-disable",   // ESLint (line)
             "/* eslint-disable",   // ESLint (block)
@@ -55,7 +61,25 @@ pub static LANGUAGES: &[Language] = &[
     },
     Language {
         name: "TypeScript",
-        extensions: &["ts", "tsx"],
+        extensions: &["ts"],
+        grammar: || tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into(),
+        comment_types: &["comment"],
+        tokens: &[
+            "// eslint-disable",   // ESLint (line)
+            "/* eslint-disable",   // ESLint (block)
+            "// tslint:disable",   // TSLint (line)
+            "/* tslint:disable",   // TSLint (block)
+            "// @ts-ignore",       // TypeScript (line)
+            "/* @ts-ignore",       // TypeScript (block/JSX)
+            "// @ts-expect-error", // TypeScript (line)
+            "/* @ts-expect-error", // TypeScript (block/JSX)
+        ],
+    },
+    Language {
+        name: "TypeScript (TSX)",
+        extensions: &["tsx"],
+        grammar: || tree_sitter_typescript::LANGUAGE_TSX.into(),
+        comment_types: &["comment"],
         tokens: &[
             "// eslint-disable",   // ESLint (line)
             "/* eslint-disable",   // ESLint (block)
@@ -112,7 +136,7 @@ mod tests {
     #[test]
     fn typescript_tsx_extension() {
         let lang = Language::for_extension("tsx").expect("tsx not found");
-        assert_eq!(lang.name, "TypeScript");
+        assert_eq!(lang.name, "TypeScript (TSX)");
     }
 
     #[test]

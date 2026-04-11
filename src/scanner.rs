@@ -62,6 +62,7 @@ pub fn scan(root_path: &Path, hidden: bool) -> Result<ScanResult, ignore::Error>
 
         scanned_files.insert(path.to_path_buf());
 
+        let mut file_violations = Vec::new();
         for (line_idx, line) in content.lines().enumerate() {
             if !re.is_match(line) {
                 continue;
@@ -71,7 +72,7 @@ pub fn scan(root_path: &Path, hidden: bool) -> Result<ScanResult, ignore::Error>
                 .iter()
                 .filter(|&&t| line.to_ascii_lowercase().contains(&t.to_ascii_lowercase()))
             {
-                violations.push(Violation {
+                file_violations.push(Violation {
                     path: path.to_path_buf(),
                     line_number: (line_idx + 1) as u32,
                     line_content: line.to_string(),
@@ -79,6 +80,9 @@ pub fn scan(root_path: &Path, hidden: bool) -> Result<ScanResult, ignore::Error>
                 });
             }
         }
+
+        let file_violations = crate::syntax::filter_non_comments(&content, lang, file_violations);
+        violations.extend(file_violations);
     }
 
     Ok(ScanResult {

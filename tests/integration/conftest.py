@@ -39,7 +39,20 @@ LANGUAGES = {
         ],
     },
     "TypeScript": {
-        "extensions": ["ts", "tsx"],
+        "extensions": ["ts"],
+        "tokens": [
+            "// eslint-disable",
+            "/* eslint-disable",
+            "// tslint:disable",
+            "/* tslint:disable",
+            "// @ts-ignore",
+            "/* @ts-ignore",
+            "// @ts-expect-error",
+            "/* @ts-expect-error",
+        ],
+    },
+    "TypeScript (TSX)": {
+        "extensions": ["tsx"],
         "tokens": [
             "// eslint-disable",
             "/* eslint-disable",
@@ -62,7 +75,6 @@ EXTENSION_PARAMS = [
 ]
 
 
-XFAIL_STRING_DETECTION = "scanner doesn't understand language syntax"
 XFAIL_WHITESPACE_VARIANT = (
     "Python-only: Flake8, Bandit accept whitespace variants but shamefile uses exact match"
 )

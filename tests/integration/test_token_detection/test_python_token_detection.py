@@ -1,12 +1,10 @@
 import pytest
 from conftest import (
-    XFAIL_STRING_DETECTION,
     XFAIL_WHITESPACE_VARIANT,
     run_shamefile,
 )
 
 
-@pytest.mark.xfail(reason=XFAIL_STRING_DETECTION)
 def test_token_inside_docstring_is_not_detected(tmp_path):
     """Token inside a docstring is not a real suppression."""
     test_file = tmp_path / "test.py"
@@ -16,6 +14,39 @@ def test_token_inside_docstring_is_not_detected(tmp_path):
 
     assert result.returncode == 0
     assert "# noqa" not in result.stdout
+
+
+def test_token_inside_multiline_string_is_not_detected(tmp_path):
+    """Token inside a triple-quoted string (not docstring) is not a real suppression."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text('msg = """\nuse # noqa to suppress\nwarnings\n"""\n')
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    assert "# noqa" not in result.stdout
+
+
+def test_token_in_comment_next_to_string_is_detected(tmp_path):
+    """Token in a comment on the same line as a string should be detected."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text('msg = "hello"  # noqa\n')
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "# noqa" in result.stdout
+
+
+def test_token_in_string_and_comment_same_line(tmp_path):
+    """Token appearing in both string and comment — the comment is real, should be detected."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text('msg = "# noqa"  # noqa\n')
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "# noqa" in result.stdout
 
 
 def test_case_insensitive_noqa_detected(tmp_path):

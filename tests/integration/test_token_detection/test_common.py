@@ -1,5 +1,4 @@
-import pytest
-from conftest import LANGUAGES, XFAIL_STRING_DETECTION, run_shamefile
+from conftest import LANGUAGES, run_shamefile
 
 PYTHON_TOKENS = LANGUAGES["Python"]["tokens"]
 
@@ -40,7 +39,6 @@ def test_token_with_trailing_text(tmp_path):
     assert "# nosec" in result.stdout
 
 
-@pytest.mark.xfail(reason=XFAIL_STRING_DETECTION)
 def test_token_inside_string_is_not_detected(tmp_path):
     """Token inside a string literal is not a real suppression and should not be detected."""
     test_file = tmp_path / "test.py"
@@ -50,6 +48,17 @@ def test_token_inside_string_is_not_detected(tmp_path):
 
     assert result.returncode == 0
     assert "# noqa" not in result.stdout
+
+
+def test_token_in_file_with_syntax_errors_is_still_detected(tmp_path):
+    """Syntax errors should not prevent token detection (graceful degradation)."""
+    test_file = tmp_path / "broken.py"
+    test_file.write_text("def foo(\n    x = 1  # noqa\n")
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "# noqa" in result.stdout
 
 
 def test_non_code_files_not_scanned(tmp_path):

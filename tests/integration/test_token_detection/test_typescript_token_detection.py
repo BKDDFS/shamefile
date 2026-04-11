@@ -1,6 +1,28 @@
 from conftest import run_shamefile
 
 
+def test_token_inside_string_is_not_detected(tmp_path):
+    """Token inside a TS string literal is not a real suppression."""
+    test_file = tmp_path / "test.ts"
+    test_file.write_text('const msg: string = "use // @ts-ignore for escape hatch";\n')
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    assert "// @ts-ignore" not in result.stdout
+
+
+def test_token_inside_template_literal_is_not_detected(tmp_path):
+    """Token inside a TS template literal is not a real suppression."""
+    test_file = tmp_path / "test.ts"
+    test_file.write_text("const msg: string = `use // @ts-ignore for escape hatch`;\n")
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    assert "// @ts-ignore" not in result.stdout
+
+
 def test_token_alone_on_line(tmp_path):
     """Token on its own line (suppressing the next line) should be detected."""
     test_file = tmp_path / "test.ts"
