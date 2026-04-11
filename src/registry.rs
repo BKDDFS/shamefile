@@ -1,6 +1,7 @@
 use crate::ShamefileError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
 use std::fs;
 use std::path::Path;
 
@@ -80,6 +81,19 @@ impl Registry {
                 entry.location = stripped.to_string();
             }
         }
+
+        let mut seen: HashSet<(&str, &str)> = HashSet::new();
+        let mut duplicates: Vec<String> = Vec::new();
+        for entry in &registry.entries {
+            let key = (entry.location.as_str(), entry.token.as_str());
+            if !seen.insert(key) {
+                duplicates.push(format!("{} at {}", entry.token, entry.location));
+            }
+        }
+        if !duplicates.is_empty() {
+            return Err(ShamefileError::DuplicateEntries(duplicates.join(", ")));
+        }
+
         Ok(registry)
     }
 

@@ -166,7 +166,6 @@ def test_non_utc_timezone_normalized_to_utc(tmp_path):
     assert "04:30" in created_at
 
 
-@pytest.mark.xfail(reason="duplicate entries silently accepted — should fail with error asking user to fix")
 def test_duplicate_entries_rejected(tmp_path):
     """Duplicate entries (same location + token) should be rejected with a clear error."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
