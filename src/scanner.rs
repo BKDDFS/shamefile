@@ -41,7 +41,7 @@ pub fn scan(root_path: &Path) -> Result<Vec<Violation>, ShamefileError> {
 
             for token in crate::tokens::TRACKED_TOKENS
                 .iter()
-                .filter(|&&t| line.contains(t))
+                .filter(|&&t| line.to_ascii_lowercase().contains(&t.to_ascii_lowercase()))
             {
                 violations.push(Violation {
                     path: path.to_path_buf(),

@@ -35,7 +35,7 @@ pub fn get_token_regex() -> String {
         .iter()
         .map(|&t| regex_syntax::escape(t))
         .collect();
-    format!("({})", patterns.join("|"))
+    format!("(?i)({})", patterns.join("|"))
 }
 
 #[cfg(any())] // Disabled vibecoded tests

@@ -1,7 +1,6 @@
 import pytest
 
 from conftest import (
-    XFAIL_CASE_INSENSITIVE,
     XFAIL_STRING_DETECTION,
     XFAIL_WHITESPACE_VARIANT,
     run_shamefile,
@@ -22,9 +21,8 @@ def test_token_inside_docstring_is_not_detected(tmp_path):
     assert "# noqa" not in result.stdout
 
 
-@pytest.mark.xfail(reason=XFAIL_CASE_INSENSITIVE)
-def test_case_insensitive_noqa_not_detected(tmp_path):
-    """# NOQA is valid Flake8 suppression but shamefile misses it."""
+def test_case_insensitive_noqa_detected(tmp_path):
+    """# NOQA is valid Flake8 suppression and should be detected."""
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # NOQA\n")
 
@@ -34,9 +32,8 @@ def test_case_insensitive_noqa_not_detected(tmp_path):
     assert "New suppression detected" in result.stdout
 
 
-@pytest.mark.xfail(reason=XFAIL_CASE_INSENSITIVE)
-def test_case_insensitive_nosec_not_detected(tmp_path):
-    """# NOSEC is valid Bandit suppression but shamefile misses it."""
+def test_case_insensitive_nosec_detected(tmp_path):
+    """# NOSEC is valid Bandit suppression and should be detected."""
     test_file = tmp_path / "test.py"
     test_file.write_text("x = dangerous_call()  # NOSEC\n")
 
@@ -46,9 +43,8 @@ def test_case_insensitive_nosec_not_detected(tmp_path):
     assert "New suppression detected" in result.stdout
 
 
-@pytest.mark.xfail(reason=XFAIL_CASE_INSENSITIVE)
-def test_case_insensitive_pragma_not_detected(tmp_path):
-    """# PRAGMA: NO COVER is valid Coverage.py suppression but shamefile misses it."""
+def test_case_insensitive_pragma_detected(tmp_path):
+    """# PRAGMA: NO COVER is valid Coverage.py suppression and should be detected."""
     test_file = tmp_path / "test.py"
     test_file.write_text("if DEBUG:  # PRAGMA: NO COVER\n    pass\n")
 
