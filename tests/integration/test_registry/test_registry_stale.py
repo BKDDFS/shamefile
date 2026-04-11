@@ -1,7 +1,6 @@
 import subprocess
 
 import yaml
-
 from conftest import run_shamefile
 
 
@@ -57,7 +56,7 @@ def test_gitignored_file_entries_become_stale(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     # Need git repo for .gitignore to work
-    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
 
     # First run — creates entry
     run_shamefile(tmp_path)

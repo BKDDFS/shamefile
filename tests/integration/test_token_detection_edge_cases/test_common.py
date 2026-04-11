@@ -1,5 +1,4 @@
 import pytest
-
 from conftest import PYTHON_TOKENS, XFAIL_STRING_DETECTION, run_shamefile
 
 

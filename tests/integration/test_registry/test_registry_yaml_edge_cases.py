@@ -1,6 +1,4 @@
-import pytest
 import yaml
-
 from conftest import run_shamefile
 
 

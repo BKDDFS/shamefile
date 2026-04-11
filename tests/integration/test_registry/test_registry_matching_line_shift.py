@@ -2,7 +2,6 @@ import subprocess
 
 import pytest
 import yaml
-
 from conftest import run_shamefile
 
 XFAIL_MATCHING = "shame_vector and cascade matching not yet implemented"
@@ -12,21 +11,22 @@ XFAIL_MATCHING = "shame_vector and cascade matching not yet implemented"
 def line_shifted_entry(tmp_path):
     """Create entry by Alice, shift line, Bob reruns, return (original_entry, new_entry)."""
     # Init repo as Alice
-    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
         cwd=tmp_path,
         capture_output=True,
+        check=True,
     )
 
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
-    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True
+        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True, check=True
     )
 
     # First run — Alice's suppression, Alice as owner (via git blame)
@@ -39,12 +39,13 @@ def line_shifted_entry(tmp_path):
 
     # Switch to Bob
     subprocess.run(
-        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True
+        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True, check=True
     )
     subprocess.run(
         ["git", "config", "user.email", "bob@test.com"],
         cwd=tmp_path,
         capture_output=True,
+        check=True,
     )
 
     # Developer adds a blank line above — suppression shifts from line 1 to line 2
@@ -85,21 +86,22 @@ def test_line_shift_updates_location(line_shifted_entry):
 @pytest.fixture
 def two_entries_shifted(tmp_path):
     """Create two entries, shift both lines, rerun, return (originals, updated)."""
-    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
         cwd=tmp_path,
         capture_output=True,
+        check=True,
     )
 
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\ny = 2  # type: ignore\n")
-    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True
+        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True, check=True
     )
 
     run_shamefile(tmp_path)
@@ -148,21 +150,22 @@ def test_one_shifts_one_stays(tmp_path):
 @pytest.mark.xfail(reason=XFAIL_MATCHING)
 def test_large_line_shift(tmp_path):
     """Suppression shifting by many lines should still preserve why."""
-    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
         cwd=tmp_path,
         capture_output=True,
+        check=True,
     )
 
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
-    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True
+        ["git", "commit", "-m", "initial"], cwd=tmp_path, capture_output=True, check=True
     )
 
     run_shamefile(tmp_path)

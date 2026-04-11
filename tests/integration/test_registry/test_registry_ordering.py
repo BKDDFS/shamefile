@@ -1,5 +1,4 @@
 import yaml
-
 from conftest import run_shamefile
 
 
@@ -71,7 +70,7 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
     (tmp_path / "test.py").write_text("x = 1  # type: ignore  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    # Manually create registry with # type: ignore before # noqa
+    # Manually create registry with # type: ignore before
     write_registry(
         registry,
         [

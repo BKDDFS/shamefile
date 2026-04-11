@@ -1,5 +1,4 @@
 import pytest
-
 from conftest import (
     XFAIL_STRING_DETECTION,
     XFAIL_WHITESPACE_VARIANT,

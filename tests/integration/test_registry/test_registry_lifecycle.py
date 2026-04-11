@@ -1,7 +1,6 @@
 import subprocess
 
 import yaml
-
 from conftest import run_shamefile
 
 
@@ -72,7 +71,7 @@ def test_newline_only_why_is_rejected(tmp_path):
 
     run_shamefile(tmp_path)
     content = registry.read_text()
-    registry.write_text(content.replace("why: ''", "why: \"\\n\\n\""))
+    registry.write_text(content.replace("why: ''", 'why: "\\n\\n"'))
 
     result = run_shamefile(tmp_path)
 
@@ -109,21 +108,22 @@ def test_no_suppressions_creates_empty_registry(tmp_path):
 
 def test_delete_registry_and_rerun_behaves_as_first_run(tmp_path):
     """Deleting shamefile.yaml and rerunning should behave identically to a first run."""
-    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True, check=True
     )
     subprocess.run(
         ["git", "config", "user.email", "alice@test.com"],
         cwd=tmp_path,
         capture_output=True,
+        check=True,
     )
 
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
-    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True, check=True)
     subprocess.run(
-        ["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True
+        ["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True, check=True
     )
 
     # First run — creates registry
@@ -141,12 +141,13 @@ def test_delete_registry_and_rerun_behaves_as_first_run(tmp_path):
 
     # Switch to Bob
     subprocess.run(
-        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True
+        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True, check=True
     )
     subprocess.run(
         ["git", "config", "user.email", "bob@test.com"],
         cwd=tmp_path,
         capture_output=True,
+        check=True,
     )
 
     # Rerun — should behave as first run (blame, not current user)

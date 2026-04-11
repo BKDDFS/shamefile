@@ -60,7 +60,13 @@ XFAIL_BLOCK_COMMENT = "shamefile only tracks // comment style, not /* */ block c
 
 def run_shamefile(cwd, *args):
     """Run the shamefile binary with 'me' subcommand in a specific working directory."""
-    return subprocess.run([BINARY_PATH, "me", *args], capture_output=True, text=True, cwd=str(cwd))
+    return subprocess.run(
+        [BINARY_PATH, "me", *args],
+        capture_output=True,
+        text=True,
+        cwd=str(cwd),
+        check=False,
+    )
 
 
 def parse_tokens_from_rust_source() -> list[str]:

@@ -1,7 +1,6 @@
 import subprocess
 
 import pytest
-
 from conftest import LANGUAGE_TOKENS, TOKEN_PARAMS, run_shamefile
 
 
@@ -37,7 +36,7 @@ def test_detects_in_nested_dirs(tmp_path):
 
 
 def test_ignores_gitignored_files(tmp_path):
-    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     (tmp_path / ".gitignore").write_text("ignored/\n")
     ignored_dir = tmp_path / "ignored"
     ignored_dir.mkdir()

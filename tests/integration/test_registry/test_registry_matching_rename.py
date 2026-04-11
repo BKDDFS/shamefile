@@ -1,6 +1,5 @@
 import pytest
 import yaml
-
 from conftest import run_shamefile
 
 XFAIL_MATCHING = "shame_vector and cascade matching not yet implemented"

@@ -1,8 +1,7 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 import yaml
-
 from conftest import run_shamefile
 
 
@@ -34,7 +33,7 @@ def test_entry_has_empty_why_on_creation(single_entry):
 def test_entry_has_recent_created_at(single_entry):
     """Entry created_at should be a recent UTC timestamp."""
     created_at = single_entry["created_at"]
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     assert isinstance(created_at, datetime)
     assert now - created_at < timedelta(minutes=5)

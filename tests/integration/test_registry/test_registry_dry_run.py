@@ -127,8 +127,8 @@ def test_dry_run_multiple_failures(tmp_path):
     assert result.returncode == 1
     # All three failure types should be reported:
     # - undocumented (# type: ignore not in registry)
-    # - stale (# noqa no longer in code)
-    # - missing why (original # noqa entry has empty why)
+    # - stale (
+    # - missing why (original
     assert "undocumented" in result.stdout.lower()
     assert "stale" in result.stdout.lower()
     assert "without reason" in result.stdout.lower()

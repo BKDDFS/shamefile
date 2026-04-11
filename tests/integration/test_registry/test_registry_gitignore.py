@@ -1,13 +1,12 @@
 import subprocess
 
 import yaml
-
 from conftest import run_shamefile
 
 
 def test_nested_gitignore_respected(tmp_path):
     """A .gitignore in a subdirectory should only affect that subdirectory."""
-    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
 
     # Root file — should always be scanned
     (tmp_path / "root.py").write_text("x = 1  # noqa\n")
@@ -35,7 +34,7 @@ def test_nested_gitignore_respected(tmp_path):
 
 def test_gitignore_negation_pattern(tmp_path):
     """Negation pattern (!) should re-include a previously ignored file."""
-    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
 
     (tmp_path / ".gitignore").write_text("*.log.py\n!important.log.py\n")
     (tmp_path / "debug.log.py").write_text("x = 1  # noqa\n")
