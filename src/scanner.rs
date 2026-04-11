@@ -16,13 +16,13 @@ pub struct Violation {
 }
 
 /// Scan a directory for tracked tokens.
-pub fn scan(root_path: &Path) -> Result<Vec<Violation>, ShamefileError> {
+pub fn scan(root_path: &Path, hidden: bool) -> Result<Vec<Violation>, ShamefileError> {
     let pattern = get_token_regex();
     let matcher = RegexMatcher::new(&pattern)?;
     let mut searcher = Searcher::new();
     let mut violations = Vec::new();
 
-    let walker = WalkBuilder::new(root_path).build();
+    let walker = WalkBuilder::new(root_path).hidden(!hidden).build();
 
     for result in walker {
         let entry = result?;

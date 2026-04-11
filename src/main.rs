@@ -24,6 +24,10 @@ enum Commands {
         /// Read-only validation for CI/CD (never saves)
         #[arg(short = 'n', long)]
         dry_run: bool,
+
+        /// Also scan hidden files and directories (dotfiles)
+        #[arg(long)]
+        hidden: bool,
     },
 }
 
@@ -31,14 +35,18 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Me { path, dry_run } => {
-            handle_me(&path, dry_run)?;
+        Commands::Me {
+            path,
+            dry_run,
+            hidden,
+        } => {
+            handle_me(&path, dry_run, hidden)?;
         }
     }
     Ok(())
 }
 
-fn handle_me(scan_path: &Path, dry_run: bool) -> Result<()> {
+fn handle_me(scan_path: &Path, dry_run: bool, hidden: bool) -> Result<()> {
     // 1. Validate that path exists (file or directory)
     if !scan_path.exists() {
         eprintln!("Error: path does not exist: {}", scan_path.display());
@@ -52,9 +60,9 @@ fn handle_me(scan_path: &Path, dry_run: bool) -> Result<()> {
 
     // 3. Dispatch
     if dry_run {
-        handle_dry_run(scan_path, &config_path, &registry_dir)
+        handle_dry_run(scan_path, &config_path, &registry_dir, hidden)
     } else {
-        handle_normal(scan_path, &config_path, &registry_dir)
+        handle_normal(scan_path, &config_path, &registry_dir, hidden)
     }
 }
 
@@ -87,7 +95,12 @@ fn filter_and_normalize_violations(
         .collect())
 }
 
-fn handle_normal(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> Result<()> {
+fn handle_normal(
+    scan_path: &Path,
+    config_path: &Path,
+    registry_dir: &Path,
+    hidden: bool,
+) -> Result<()> {
     // 1. Load or create registry
     let is_first_run = !config_path.exists();
     let mut registry = if is_first_run {
@@ -99,7 +112,7 @@ fn handle_normal(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> R
 
     // 2. Scan for violations
     println!("Scanning {} for suppressions...", scan_path.display());
-    let all_violations = scanner::scan(scan_path).context("Failed to scan files")?;
+    let all_violations = scanner::scan(scan_path, hidden).context("Failed to scan files")?;
     let violations = filter_and_normalize_violations(all_violations, config_path, registry_dir)?;
 
     println!("Found {} suppressions in code.", violations.len());
@@ -218,7 +231,12 @@ fn handle_normal(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> R
     Ok(())
 }
 
-fn handle_dry_run(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> Result<()> {
+fn handle_dry_run(
+    scan_path: &Path,
+    config_path: &Path,
+    registry_dir: &Path,
+    hidden: bool,
+) -> Result<()> {
     // 1. Load existing registry (fail if missing)
     if !config_path.exists() {
         eprintln!(
@@ -234,7 +252,7 @@ fn handle_dry_run(scan_path: &Path, config_path: &Path, registry_dir: &Path) -> 
         "Step 1: Scanning {} for suppressions...",
         scan_path.display()
     );
-    let all_violations = scanner::scan(scan_path).context("Failed to scan files")?;
+    let all_violations = scanner::scan(scan_path, hidden).context("Failed to scan files")?;
     let violations = filter_and_normalize_violations(all_violations, config_path, registry_dir)?;
 
     println!("Found {} suppressions in code.", violations.len());
