@@ -44,6 +44,39 @@ def test_whitespace_only_why_is_rejected(tmp_path):
     assert "Missing reason (why)" in result.stdout
 
 
+def test_whitespace_wrapped_why_is_accepted(tmp_path):
+    """Entry with whitespace-wrapped real content in 'why' should pass validation."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(tmp_path)
+    content = registry.read_text()
+    registry.write_text(content.replace("why: ''", "why: '  Legacy code  '"))
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 0
+    assert "Validation passed" in result.stdout
+
+
+def test_newline_only_why_is_rejected(tmp_path):
+    """Entry with newline-only 'why' should be treated as empty."""
+    test_file = tmp_path / "test.py"
+    test_file.write_text("x = 1  # noqa\n")
+    registry = tmp_path / "shamefile.yaml"
+
+    run_shamefile(tmp_path)
+    content = registry.read_text()
+    registry.write_text(content.replace("why: ''", "why: \"\\n\\n\""))
+
+    result = run_shamefile(tmp_path)
+
+    assert result.returncode == 1
+    assert "Missing reason (why)" in result.stdout
+
+
+
 def test_creates_registry_when_missing(tmp_path):
     """Running shame me on a dir without shamefile.yaml should create it."""
     test_file = tmp_path / "test.py"
