@@ -28,7 +28,15 @@ pub struct Entry {
 
     /// The reason why this suppression exists.
     /// If empty, it means justification is missing.
+    #[serde(deserialize_with = "deserialize_why")]
     pub why: String,
+}
+
+fn deserialize_why<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Option::<String>::deserialize(deserializer)?.unwrap_or_default())
 }
 
 impl Entry {

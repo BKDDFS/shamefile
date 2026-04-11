@@ -47,7 +47,6 @@ def test_multiline_why_accepted(tmp_path):
     assert "long explanation" in entry["why"]
 
 
-@pytest.mark.xfail(reason="serde_yaml deserializes null as valid string, not caught by validation")
 def test_why_null_treated_as_empty(tmp_path):
     """Explicit YAML null in why field should be treated as missing justification."""
     test_file = tmp_path / "test.py"
