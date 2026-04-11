@@ -181,3 +181,77 @@ def test_owner_missing_name_and_email(tmp_path):
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entry = registry["entries"][0]
     assert entry["owner"] == "Unknown"
+
+
+def test_mixed_committed_and_uncommitted_owners(tmp_path):
+    """First run: committed file gets blame owner, uncommitted gets current user."""
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "alice@test.com"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    (tmp_path / "old.py").write_text("x = 1  # noqa\n")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True
+    )
+
+    # Switch to Bob
+    subprocess.run(
+        ["git", "config", "user.name", "Bob"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "bob@test.com"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    # new.py is NOT committed — blame will fail, fallback to current user
+    (tmp_path / "new.py").write_text("y = 2  # type: ignore\n")
+
+    run_shamefile(tmp_path)
+
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry["entries"]
+    assert len(entries) == 2
+
+    by_file = {e["location"].split(":")[0]: e for e in entries}
+    assert by_file["old.py"]["owner"] == "Alice <alice@test.com>"
+    assert by_file["new.py"]["owner"] == "Bob <bob@test.com>"
+
+
+def test_staged_uncommitted_file_not_attributed_to_not_committed_yet(tmp_path):
+    """Staged but uncommitted file should use fallback owner, not 'Not Committed Yet'."""
+    subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "config", "user.name", "Alice"], cwd=tmp_path, capture_output=True
+    )
+    subprocess.run(
+        ["git", "config", "user.email", "alice@test.com"],
+        cwd=tmp_path,
+        capture_output=True,
+    )
+
+    # Need at least one commit for blame to run (otherwise blame exits immediately)
+    (tmp_path / "init.txt").write_text("init\n")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, capture_output=True)
+    subprocess.run(
+        ["git", "commit", "-m", "init"], cwd=tmp_path, capture_output=True
+    )
+
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    subprocess.run(["git", "add", "test.py"], cwd=tmp_path, capture_output=True)
+    # Staged but NOT committed
+
+    run_shamefile(tmp_path)
+
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry["entries"]
+    assert len(entries) == 1
+    assert "Not Committed Yet" not in entries[0]["owner"]
+    assert entries[0]["owner"] == "Alice <alice@test.com>"

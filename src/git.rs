@@ -70,7 +70,7 @@ pub fn get_git_blame_author(file: &str, line: u32, repo_path: &Path) -> Option<S
     }
 
     match (name, email) {
-        (Some(n), Some(e)) => Some(format!("{} <{}>", n, e)),
+        (Some(n), Some(e)) if n != "Not Committed Yet" => Some(format!("{} <{}>", n, e)),
         _ => None,
     }
 }
