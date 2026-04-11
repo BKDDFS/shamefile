@@ -1,5 +1,4 @@
 target/
-shamefile.yaml
 test.py
 .claude/
 .idea/

@@ -21,7 +21,7 @@ def test_dot_path_scans_current_directory(tmp_path):
 
 
 def test_shamefile_created_at_git_root(tmp_path):
-    """Running from subdirectory of a git repo should create shamefile.yaml at git root."""
+    """Running from git repo subdir should create shamefile.yaml at git root."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     src = tmp_path / "src"
     src.mkdir()
@@ -121,7 +121,7 @@ def test_single_file_with_git_uses_git_root(tmp_path):
 
 
 def test_single_file_without_git_uses_cwd(tmp_path):
-    """'shame me src/app.py' without git should place registry at CWD, not file's dir."""
+    """Without git, registry should be placed at CWD, not file's directory."""
     src = tmp_path / "src"
     src.mkdir()
     (src / "app.py").write_text("x = 1  # noqa\n")

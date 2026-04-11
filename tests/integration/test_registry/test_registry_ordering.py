@@ -2,7 +2,7 @@ import yaml
 from conftest import run_shamefile
 
 
-def make_entry(location, token="# noqa", why="", owner="Test <test@test.com>"):
+def make_entry(location, token="# noqa", why="", owner="Test <test@test.com>"):  # noqa: S107
     """Create a minimal shamefile entry dict."""
     return {
         "location": location,
@@ -72,9 +72,9 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
         registry,
         [
             make_entry(
-                f"{tmp_path}/test.py:1", token="# type: ignore", why="reason ti"
+                f"{tmp_path}/test.py:1", token="# type: ignore", why="reason ti"  # noqa: S106
             ),
-            make_entry(f"{tmp_path}/test.py:1", token="# noqa", why="reason noqa"),
+            make_entry(f"{tmp_path}/test.py:1", token="# noqa", why="reason noqa"),  # noqa: S106
         ],
     )
 

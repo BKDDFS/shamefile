@@ -111,7 +111,7 @@ def test_owner_from_git_blame_scanning_subdirectory(tmp_path):
         check=True,
     )
 
-    result = subprocess.run(
+    subprocess.run(
         [BINARY_PATH, "me", "src"],
         capture_output=True,
         text=True,

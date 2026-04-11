@@ -12,7 +12,7 @@ def test_utf8_bom_file_detected(tmp_path):
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 1
-    assert entries[0]["token"] == "# noqa"
+    assert entries[0]["token"] == "# noqa"  # noqa: S105
 
 
 def test_crlf_line_endings_detected(tmp_path):
@@ -25,7 +25,7 @@ def test_crlf_line_endings_detected(tmp_path):
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 1
-    assert entries[0]["token"] == "# noqa"
+    assert entries[0]["token"] == "# noqa"  # noqa: S105
 
 
 def test_non_utf8_file_skipped_with_warning(tmp_path):

@@ -123,7 +123,7 @@ def test_missing_required_field_exits_with_error(tmp_path):
 
 
 def test_wrong_type_in_field_exits_with_error(tmp_path):
-    """Wrong type (list instead of string) in a field should produce a clear deserialization error."""
+    """Wrong type (list instead of string) in field should produce deserialization error."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
     (tmp_path / "shamefile.yaml").write_text(
         "config: {}\n"

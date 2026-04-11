@@ -17,7 +17,7 @@ def single_entry(tmp_path):
 
 def test_entry_has_correct_token(single_entry):
     """Entry token should match the detected suppression."""
-    assert single_entry["token"] == "# noqa"
+    assert single_entry["token"] == "# noqa"  # noqa: S105
 
 
 def test_entry_has_correct_location(single_entry):

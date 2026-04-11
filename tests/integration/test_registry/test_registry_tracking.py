@@ -142,7 +142,7 @@ def test_suppression_on_last_line_without_trailing_newline(tmp_path):
 
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 1
-    assert entries[0]["token"] == "# noqa"
+    assert entries[0]["token"] == "# noqa"  # noqa: S105
 
 
 def test_different_tokens_same_line_independent_entries(tmp_path):

@@ -95,7 +95,7 @@ def test_replacing_token_removes_old_and_adds_new(tmp_path):
 
     # New entry should have empty why (forces re-justification)
     entries = yaml.safe_load(registry_content)["entries"]
-    new_entry = [e for e in entries if e["token"] == "# type: ignore"][0]
+    new_entry = next(e for e in entries if e["token"] == "# type: ignore")  # noqa: S105
     assert new_entry["why"] == ""
 
 

@@ -29,7 +29,7 @@ def test_dotfiles_skipped_by_default(tmp_path):
     )
     (tmp_path / "visible.py").write_text("y = 2  # type: ignore\n")
 
-    result = run_shamefile(tmp_path)
+    run_shamefile(tmp_path)
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entries = registry["entries"]
@@ -49,7 +49,7 @@ def test_hidden_flag_includes_hidden_directories(tmp_path):
     )
     (tmp_path / "visible.py").write_text("y = 2  # type: ignore\n")
 
-    result = run_shamefile(tmp_path, "--hidden")
+    run_shamefile(tmp_path, "--hidden")
 
     registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
     entries = registry["entries"]
