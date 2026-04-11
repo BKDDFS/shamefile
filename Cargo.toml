@@ -23,5 +23,8 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml = "0.9.34"
 thiserror = "2.0.18"
 
+[profile.dev.package."*"]
+opt-level = 1
+
 [dev-dependencies]
 tempfile = "3"

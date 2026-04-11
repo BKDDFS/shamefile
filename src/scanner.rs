@@ -32,13 +32,7 @@ pub fn scan(root_path: &Path, hidden: bool) -> Result<Vec<Violation>, ShamefileE
 
         let path = entry.path();
 
-        // Use a sink to collect matches for this file
         let sink = UTF8(|lnum, line| {
-            // Find which token matched
-            // Since we use regex like `(# noqa|# NOSONAR)`, we can just check which one is present
-            // Optimization: We could use `matcher` to find the match within `line`,
-            // but simple string contains is fast enough for the sink callback since regex already confirmed a match.
-
             for token in crate::tokens::TRACKED_TOKENS
                 .iter()
                 .filter(|&&t| line.to_ascii_lowercase().contains(&t.to_ascii_lowercase()))
