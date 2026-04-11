@@ -6,6 +6,7 @@ from conftest import LANGUAGE_TOKENS, TOKEN_PARAMS, run_shamefile
 
 @pytest.mark.parametrize(("token", "extension"), TOKEN_PARAMS)
 def test_detects_token(token, extension, tmp_path):
+    """Each tracked token should be detected in a file with the matching extension."""
     test_file = tmp_path / f"test{extension}"
     test_file.write_text(f"x = 1  {token}\n")
 
@@ -17,6 +18,7 @@ def test_detects_token(token, extension, tmp_path):
 
 
 def test_detects_in_nested_dirs(tmp_path):
+    """Tokens in deeply nested directories should all be found."""
     nested = tmp_path
     for i in range(10):
         nested = nested / f"level{i}"
@@ -36,6 +38,7 @@ def test_detects_in_nested_dirs(tmp_path):
 
 
 def test_ignores_gitignored_files(tmp_path):
+    """Files matching .gitignore patterns should not be scanned."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)
     (tmp_path / ".gitignore").write_text("ignored/\n")
     ignored_dir = tmp_path / "ignored"
@@ -49,6 +52,7 @@ def test_ignores_gitignored_files(tmp_path):
 
 
 def test_gitignore_not_respected_without_git_init(tmp_path):
+    """Without git init, .gitignore should have no effect on scanning."""
     (tmp_path / ".gitignore").write_text("ignored/\n")
     ignored_dir = tmp_path / "ignored"
     ignored_dir.mkdir()
@@ -61,6 +65,7 @@ def test_gitignore_not_respected_without_git_init(tmp_path):
 
 
 def test_multiple_files_multiple_languages(tmp_path):
+    """One file per language extension should detect all their tokens."""
     expected_tokens = []
     for ext, tokens in LANGUAGE_TOKENS.items():
         token = tokens[0]
