@@ -3,6 +3,7 @@ use chrono::Utc;
 use clap::{Parser, Subcommand};
 use shamefile::registry::{Entry, Registry};
 use shamefile::scanner;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
@@ -17,9 +18,9 @@ struct Cli {
 enum Commands {
     /// Scan for suppressions, sync registry, and validate
     Me {
-        /// Directory to scan
+        /// Paths to scan
         #[arg(default_value = ".")]
-        path: PathBuf,
+        paths: Vec<PathBuf>,
 
         /// Read-only validation for CI/CD (never saves)
         #[arg(short = 'n', long)]
@@ -36,48 +37,69 @@ fn main() -> Result<()> {
 
     match cli.command {
         Commands::Me {
-            path,
+            paths,
             dry_run,
             hidden,
         } => {
-            handle_me(&path, dry_run, hidden)?;
+            handle_me(&paths, dry_run, hidden)?;
         }
     }
     Ok(())
 }
 
-fn handle_me(scan_path: &Path, dry_run: bool, hidden: bool) -> Result<()> {
-    // 1. Validate that path exists (file or directory)
-    if !scan_path.exists() {
-        eprintln!("Error: path does not exist: {}", scan_path.display());
-        std::process::exit(1);
+fn handle_me(scan_paths: &[PathBuf], dry_run: bool, hidden: bool) -> Result<()> {
+    // 1. Validate that all paths exist (fail-fast)
+    for path in scan_paths {
+        if !path.exists() {
+            eprintln!("Error: path does not exist: {}", path.display());
+            std::process::exit(1);
+        }
     }
 
     // 2. Determine registry location: git root or CWD
     let cwd = std::env::current_dir().context("Failed to get current directory")?;
     let registry_dir = shamefile::git::find_git_root(&cwd).unwrap_or_else(|| cwd.clone());
+    let registry_dir_canonical = std::fs::canonicalize(&registry_dir)
+        .context("Failed to canonicalize registry directory")?;
+
+    // 3. Validate that all paths are within project root
+    for path in scan_paths {
+        if let Ok(canonical) = std::fs::canonicalize(path)
+            && !canonical.starts_with(&registry_dir_canonical)
+        {
+            eprintln!(
+                "Error: path '{}' is outside project root ({})",
+                path.display(),
+                registry_dir.display()
+            );
+            std::process::exit(1);
+        }
+    }
+
     let config_path = registry_dir.join("shamefile.yaml");
 
-    // 3. Dispatch
+    // 4. Dispatch
     if dry_run {
-        handle_dry_run(scan_path, &config_path, &registry_dir, hidden)
+        handle_dry_run(scan_paths, &config_path, &registry_dir, hidden)
     } else {
-        handle_normal(scan_path, &config_path, &registry_dir, hidden)
+        handle_normal(scan_paths, &config_path, &registry_dir, hidden)
     }
 }
 
 /// Filters out shamefile.yaml from violations and normalizes paths relative to registry_dir.
-fn filter_and_normalize_violations(
+/// Also normalizes scanned_files paths the same way.
+fn filter_and_normalize(
     violations: Vec<scanner::Violation>,
+    scanned_files: HashSet<PathBuf>,
     config_path: &Path,
     registry_dir: &Path,
-) -> Result<Vec<scanner::Violation>> {
+) -> Result<(Vec<scanner::Violation>, HashSet<PathBuf>)> {
     let registry_dir_canonical =
         std::fs::canonicalize(registry_dir).context("Failed to canonicalize registry directory")?;
     let config_path_canonical =
         std::fs::canonicalize(config_path).unwrap_or_else(|_| config_path.to_path_buf());
 
-    Ok(violations
+    let normalized_violations = violations
         .into_iter()
         .filter_map(|mut v| {
             let v_canonical = std::fs::canonicalize(&v.path).ok()?;
@@ -92,11 +114,25 @@ fn filter_and_normalize_violations(
 
             Some(v)
         })
-        .collect())
+        .collect();
+
+    let normalized_files = scanned_files
+        .into_iter()
+        .filter_map(|f| {
+            let f_canonical = std::fs::canonicalize(&f).ok()?;
+            if let Ok(relative) = f_canonical.strip_prefix(&registry_dir_canonical) {
+                Some(relative.to_path_buf())
+            } else {
+                Some(f)
+            }
+        })
+        .collect();
+
+    Ok((normalized_violations, normalized_files))
 }
 
 fn handle_normal(
-    scan_path: &Path,
+    scan_paths: &[PathBuf],
     config_path: &Path,
     registry_dir: &Path,
     hidden: bool,
@@ -111,9 +147,22 @@ fn handle_normal(
     };
 
     // 2. Scan for violations
-    println!("Scanning {} for suppressions...", scan_path.display());
-    let all_violations = scanner::scan(scan_path, hidden).context("Failed to scan files")?;
-    let violations = filter_and_normalize_violations(all_violations, config_path, registry_dir)?;
+    let mut all_violations = Vec::new();
+    let mut all_scanned_files = HashSet::new();
+    for path in scan_paths {
+        println!("Scanning {} for suppressions...", path.display());
+        let result = scanner::scan(path, hidden).context("Failed to scan files")?;
+        all_violations.extend(result.violations);
+        all_scanned_files.extend(result.scanned_files);
+    }
+    let (mut violations, scanned_files) =
+        filter_and_normalize(all_violations, all_scanned_files, config_path, registry_dir)?;
+    violations.sort_by(|a, b| {
+        (&a.path, a.line_number, &a.matched_token).cmp(&(&b.path, b.line_number, &b.matched_token))
+    });
+    violations.dedup_by(|a, b| {
+        a.path == b.path && a.line_number == b.line_number && a.matched_token == b.matched_token
+    });
 
     println!("Found {} suppressions in code.", violations.len());
 
@@ -161,9 +210,38 @@ fn handle_normal(
         }
     }
 
-    // 4. Remove stale entries
+    // 4. Remove stale entries (only if file is within scanned scope)
+    //    A file is "in scope" if it was visited by the scanner OR if it falls
+    //    under any of the scan paths (covers deleted/gitignored files).
+    let registry_dir_canonical =
+        std::fs::canonicalize(registry_dir).unwrap_or_else(|_| registry_dir.to_path_buf());
+    let scan_paths_canonical: Vec<PathBuf> = scan_paths
+        .iter()
+        .filter_map(|p| std::fs::canonicalize(p).ok())
+        .map(|c| {
+            c.strip_prefix(&registry_dir_canonical)
+                .map(|r| r.to_path_buf())
+                .unwrap_or(c)
+        })
+        .collect();
     let initial_count = registry.entries.len();
     registry.entries.retain(|entry| {
+        let entry_file_raw = PathBuf::from(entry.file());
+        let entry_file = if entry_file_raw.is_absolute() {
+            entry_file_raw
+                .strip_prefix(&registry_dir_canonical)
+                .map(|p| p.to_path_buf())
+                .unwrap_or(entry_file_raw)
+        } else {
+            entry_file_raw
+        };
+        let in_scope = scanned_files.contains(&entry_file)
+            || scan_paths_canonical
+                .iter()
+                .any(|sp| entry_file.starts_with(sp));
+        if !in_scope {
+            return true; // not in scan scope — leave it alone
+        }
         let is_valid = violations.iter().any(|v| {
             let loc = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
             loc == entry.location && v.matched_token == entry.token
@@ -232,7 +310,7 @@ fn handle_normal(
 }
 
 fn handle_dry_run(
-    scan_path: &Path,
+    scan_paths: &[PathBuf],
     config_path: &Path,
     registry_dir: &Path,
     hidden: bool,
@@ -248,12 +326,22 @@ fn handle_dry_run(
     let registry = Registry::load(config_path).context("Failed to load registry")?;
 
     // 2. Scan for violations
-    println!(
-        "Step 1: Scanning {} for suppressions...",
-        scan_path.display()
-    );
-    let all_violations = scanner::scan(scan_path, hidden).context("Failed to scan files")?;
-    let violations = filter_and_normalize_violations(all_violations, config_path, registry_dir)?;
+    let mut all_violations = Vec::new();
+    let mut all_scanned_files = HashSet::new();
+    for path in scan_paths {
+        println!("Step 1: Scanning {} for suppressions...", path.display());
+        let result = scanner::scan(path, hidden).context("Failed to scan files")?;
+        all_violations.extend(result.violations);
+        all_scanned_files.extend(result.scanned_files);
+    }
+    let (mut violations, scanned_files) =
+        filter_and_normalize(all_violations, all_scanned_files, config_path, registry_dir)?;
+    violations.sort_by(|a, b| {
+        (&a.path, a.line_number, &a.matched_token).cmp(&(&b.path, b.line_number, &b.matched_token))
+    });
+    violations.dedup_by(|a, b| {
+        a.path == b.path && a.line_number == b.line_number && a.matched_token == b.matched_token
+    });
 
     println!("Found {} suppressions in code.", violations.len());
 
@@ -290,12 +378,39 @@ fn handle_dry_run(
         failed = true;
     }
 
-    // Step 3: Stale check (registry ⊆ code)
+    // Step 3: Stale check (registry ⊆ code, scoped to scanned files)
     println!("\nStep 3: Checking for stale entries (shamefile -> code)...");
+    let registry_dir_canonical =
+        std::fs::canonicalize(registry_dir).unwrap_or_else(|_| registry_dir.to_path_buf());
+    let scan_paths_canonical: Vec<PathBuf> = scan_paths
+        .iter()
+        .filter_map(|p| std::fs::canonicalize(p).ok())
+        .map(|c| {
+            c.strip_prefix(&registry_dir_canonical)
+                .map(|r| r.to_path_buf())
+                .unwrap_or(c)
+        })
+        .collect();
     let stale: Vec<_> = registry
         .entries
         .iter()
         .filter(|e| {
+            let entry_file_raw = PathBuf::from(e.file());
+            let entry_file = if entry_file_raw.is_absolute() {
+                entry_file_raw
+                    .strip_prefix(&registry_dir_canonical)
+                    .map(|p| p.to_path_buf())
+                    .unwrap_or(entry_file_raw)
+            } else {
+                entry_file_raw
+            };
+            let in_scope = scanned_files.contains(&entry_file)
+                || scan_paths_canonical
+                    .iter()
+                    .any(|sp| entry_file.starts_with(sp));
+            if !in_scope {
+                return false; // not in scan scope — not stale
+            }
             !violations.iter().any(|v| {
                 let loc = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
                 loc == e.location && v.matched_token == e.token

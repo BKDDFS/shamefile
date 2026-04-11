@@ -1,5 +1,7 @@
+import subprocess
+
 import yaml
-from conftest import run_shamefile
+from conftest import BINARY_PATH, run_shamefile
 
 
 def test_rerun_produces_same_yaml(tmp_path):
@@ -35,3 +37,29 @@ def test_shamefile_yaml_not_scanned(tmp_path):
     entries = yaml.safe_load(registry.read_text())["entries"]
     assert len(entries) == 1
     assert result.returncode == 0
+
+
+def test_shamefile_yaml_not_scanned_with_absolute_path(tmp_path):
+    """shamefile.yaml should be excluded from scan even when using absolute path."""
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+
+    # First run to create registry
+    run_shamefile(tmp_path)
+
+    # Fill why with a suppression token
+    registry_path = tmp_path / "shamefile.yaml"
+    content = registry_path.read_text()
+    registry_path.write_text(content.replace("why: ''", "why: 'has # noqa in text'"))
+
+    # Rerun with absolute path — different path form than what created the registry
+    subprocess.run(
+        [BINARY_PATH, "me", str(tmp_path)],
+        capture_output=True,
+        text=True,
+        cwd=tmp_path,
+        check=False,
+    )
+
+    entries = yaml.safe_load(registry_path.read_text())["entries"]
+    for entry in entries:
+        assert "shamefile.yaml" not in entry["location"]

@@ -4,6 +4,7 @@ use grep::regex::RegexMatcher;
 use grep::searcher::Searcher;
 use grep::searcher::sinks::UTF8;
 use ignore::WalkBuilder;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 
 /// Represents a raw violation found in the codebase.
@@ -15,12 +16,18 @@ pub struct Violation {
     pub matched_token: String,
 }
 
+pub struct ScanResult {
+    pub violations: Vec<Violation>,
+    pub scanned_files: HashSet<PathBuf>,
+}
+
 /// Scan a directory for tracked tokens.
-pub fn scan(root_path: &Path, hidden: bool) -> Result<Vec<Violation>, ShamefileError> {
+pub fn scan(root_path: &Path, hidden: bool) -> Result<ScanResult, ShamefileError> {
     let pattern = get_token_regex();
     let matcher = RegexMatcher::new(&pattern)?;
     let mut searcher = Searcher::new();
     let mut violations = Vec::new();
+    let mut scanned_files = HashSet::new();
 
     let walker = WalkBuilder::new(root_path).hidden(!hidden).build();
 
@@ -31,6 +38,7 @@ pub fn scan(root_path: &Path, hidden: bool) -> Result<Vec<Violation>, ShamefileE
         }
 
         let path = entry.path();
+        scanned_files.insert(path.to_path_buf());
 
         let sink = UTF8(|lnum, line| {
             for token in crate::tokens::TRACKED_TOKENS
@@ -52,5 +60,8 @@ pub fn scan(root_path: &Path, hidden: bool) -> Result<Vec<Violation>, ShamefileE
         }
     }
 
-    Ok(violations)
+    Ok(ScanResult {
+        violations,
+        scanned_files,
+    })
 }
