@@ -1,7 +1,7 @@
 use crate::ShamefileError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::Path;
 
@@ -59,6 +59,34 @@ impl Entry {
     }
 }
 
+/// Returns the 1-indexed line number where each entry under `entries:` begins.
+/// The result is parallel to `Vec<Entry>` produced by serde_yaml, since both
+/// preserve sequence order. Used to point users at the duplicate row in
+/// `shamefile.yaml` so the location is IDE-clickable.
+fn extract_entry_start_lines(content: &str) -> Vec<usize> {
+    let mut lines = Vec::new();
+    let mut in_entries = false;
+
+    for (i, line) in content.lines().enumerate() {
+        let line_no = i + 1;
+        let trimmed = line.trim_start();
+        let indent = line.len() - trimmed.len();
+
+        if indent == 0 && trimmed.starts_with("entries:") {
+            in_entries = true;
+            continue;
+        }
+        if in_entries && indent == 0 && !trimmed.is_empty() {
+            in_entries = false;
+            continue;
+        }
+        if in_entries && (trimmed.starts_with("- ") || trimmed == "-") {
+            lines.push(line_no);
+        }
+    }
+    lines
+}
+
 impl Default for Registry {
     fn default() -> Self {
         Self::new()
@@ -82,16 +110,32 @@ impl Registry {
             }
         }
 
-        let mut seen: HashSet<(&str, &str)> = HashSet::new();
-        let mut duplicates: Vec<String> = Vec::new();
-        for entry in &registry.entries {
-            let key = (entry.location.as_str(), entry.token.as_str());
-            if !seen.insert(key) {
-                duplicates.push(format!("{} at {}", entry.token, entry.location));
-            }
+        let entry_lines = extract_entry_start_lines(&content);
+        let mut groups: BTreeMap<(&str, &str), Vec<usize>> = BTreeMap::new();
+        for (idx, entry) in registry.entries.iter().enumerate() {
+            let line_no = entry_lines.get(idx).copied().unwrap_or(0);
+            groups
+                .entry((entry.location.as_str(), entry.token.as_str()))
+                .or_default()
+                .push(line_no);
         }
+        let path_display = path.display().to_string();
+        let duplicates: Vec<String> = groups
+            .into_iter()
+            .filter(|(_, lines)| lines.len() > 1)
+            .map(|((loc, tok), lines)| {
+                let refs: Vec<String> = lines
+                    .iter()
+                    .map(|l| format!("{}:{}", path_display, l))
+                    .collect();
+                format!("'{}' at {} ({})", tok, loc, refs.join(", "))
+            })
+            .collect();
         if !duplicates.is_empty() {
-            return Err(ShamefileError::DuplicateEntries(duplicates.join(", ")));
+            return Err(ShamefileError::DuplicateEntries(format!(
+                "please remove duplicates from shamefile.yaml: {}",
+                duplicates.join("; ")
+            )));
         }
 
         Ok(registry)

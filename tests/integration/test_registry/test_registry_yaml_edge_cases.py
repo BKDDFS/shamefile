@@ -186,5 +186,13 @@ def test_duplicate_entries_rejected(tmp_path):
 
     result = run_shamefile(tmp_path)
 
+    output = result.stderr + result.stdout
     assert result.returncode == 1
-    assert "duplicate" in result.stderr.lower() or "duplicate" in result.stdout.lower()
+    assert "duplicate" in output.lower()
+    # Token and source location help the user understand the conflict.
+    assert "# noqa" in output
+    assert "test.py:1" in output
+    # IDE-clickable references to BOTH duplicate rows in shamefile.yaml itself.
+    # Entries start at lines 3 and 8 of the fixture written above.
+    assert "shamefile.yaml:3" in output
+    assert "shamefile.yaml:8" in output
