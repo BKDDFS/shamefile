@@ -31,13 +31,9 @@ pub struct Entry {
     pub location: String,
     pub token: String,
     pub shame_vector: String,
-
-    pub owner: String,
     #[serde(deserialize_with = "deserialize_created_at")]
     pub created_at: DateTime<Utc>,
-
-    /// The reason why this suppression exists.
-    /// If empty, it means justification is missing.
+    pub owner: String,
     #[serde(deserialize_with = "deserialize_why")]
     pub why: String,
 }
@@ -179,6 +175,8 @@ impl Registry {
                 .then(a.token.cmp(&b.token))
         });
         let content = serde_yaml::to_string(self)?;
+        // Add blank line between entries for readability
+        let content = content.replace("\n- location:", "\n\n- location:");
         fs::write(path, content).map_err(ShamefileError::RegistryWriteError)?;
         Ok(())
     }
