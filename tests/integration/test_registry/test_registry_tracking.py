@@ -72,8 +72,9 @@ def test_same_token_on_multiple_lines_tracked_independently(tmp_path):
     # First run — creates two entries
     run_shamefile(tmp_path)
     content = registry.read_text()
+    entries = yaml.safe_load(content)["entries"]
     noqa_count = 2  # line 1 + line 2
-    assert content.count("# noqa") == noqa_count
+    assert len(entries) == noqa_count
 
     # Justify only the first one (line 1)
     registry.write_text(content.replace("why: ''", "why: 'Justified'", 1))
@@ -82,7 +83,7 @@ def test_same_token_on_multiple_lines_tracked_independently(tmp_path):
 
     assert result.returncode == 1  # second entry still unjustified
     registry_content = registry.read_text()
-    assert registry_content.count("# noqa") == noqa_count  # both still tracked
+    assert len(yaml.safe_load(registry_content)["entries"]) == noqa_count  # both still tracked
     assert "Justified" in registry_content  # first entry preserved
 
 

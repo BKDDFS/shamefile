@@ -28,7 +28,7 @@ def test_empty_why_fails(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "Missing reason (why)" in result.stdout
+    assert "missing why" in result.stdout
 
 
 def test_whitespace_only_why_is_rejected(tmp_path):
@@ -44,7 +44,7 @@ def test_whitespace_only_why_is_rejected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "Missing reason (why)" in result.stdout
+    assert "missing why" in result.stdout
 
 
 def test_whitespace_wrapped_why_is_accepted(tmp_path):
@@ -76,7 +76,7 @@ def test_newline_only_why_is_rejected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "Missing reason (why)" in result.stdout
+    assert "missing why" in result.stdout
 
 
 def test_creates_registry_when_missing(tmp_path):

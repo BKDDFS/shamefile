@@ -4,27 +4,27 @@ import yaml
 from conftest import git_commit, git_init, run_shamefile
 
 
-def test_same_content_produces_same_shame_vector(tmp_path):
-    """Two entries with identical line content should have the same shame_vector."""
+def test_same_content_produces_same_content(tmp_path):
+    """Two entries with identical line content should have the same content."""
     (tmp_path / "a.py").write_text("x = 1  # noqa\n")
     (tmp_path / "b.py").write_text("x = 1  # noqa\n")
 
     run_shamefile(tmp_path)
 
     entries = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())["entries"]
-    vectors = [e["shame_vector"] for e in entries]
+    vectors = [e["content"] for e in entries]
     assert vectors[0] == vectors[1]
 
 
-def test_different_content_produces_different_shame_vector(tmp_path):
-    """Two entries with different line content should have different shame_vectors."""
+def test_different_content_produces_different_content(tmp_path):
+    """Two entries with different line content should have different contents."""
     (tmp_path / "a.py").write_text("x = 1  # noqa\n")
     (tmp_path / "b.py").write_text("y = calculate()  # noqa\n")
 
     run_shamefile(tmp_path)
 
     entries = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())["entries"]
-    vectors = [e["shame_vector"] for e in entries]
+    vectors = [e["content"] for e in entries]
     assert vectors[0] != vectors[1]
 
 
@@ -83,8 +83,8 @@ def test_content_change_preserves_created_at(tmp_path):
     assert entry["created_at"] == original["created_at"]
 
 
-def test_rerun_without_changes_preserves_shame_vector(tmp_path):
-    """Running twice without code changes should not alter shame_vector."""
+def test_rerun_without_changes_preserves_content(tmp_path):
+    """Running twice without code changes should not alter content."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
     registry_path = tmp_path / "shamefile.yaml"
 
@@ -92,11 +92,11 @@ def test_rerun_without_changes_preserves_shame_vector(tmp_path):
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
 
-    first = yaml.safe_load(registry_path.read_text())["entries"][0]["shame_vector"]
+    first = yaml.safe_load(registry_path.read_text())["entries"][0]["content"]
 
     run_shamefile(tmp_path)
 
-    second = yaml.safe_load(registry_path.read_text())["entries"][0]["shame_vector"]
+    second = yaml.safe_load(registry_path.read_text())["entries"][0]["content"]
     assert first == second
 
 

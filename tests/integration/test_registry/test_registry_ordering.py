@@ -7,13 +7,13 @@ def make_entry(
     token="# noqa",  # noqa: S107
     why="",
     owner="Test <test@test.com>",
-    shame_vector="sv1:0000000000000000",
+    content="x = 1  # noqa",
 ):
     """Create a minimal shamefile entry dict."""
     return {
         "location": location,
         "token": token,
-        "shame_vector": shame_vector,
+        "content": content,
         "owner": owner,
         "created_at": "2026-01-01T00:00:00Z",
         "why": why,
@@ -81,11 +81,13 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
             make_entry(
                 "./test.py:1",
                 token="# type: ignore",  # noqa: S106
+                content="x = 1  # type: ignore  # noqa",
                 why="reason ti",
             ),
             make_entry(
                 "./test.py:1",
                 token="# noqa",  # noqa: S106
+                content="x = 1  # type: ignore  # noqa",
                 why="reason noqa",
             ),
         ],

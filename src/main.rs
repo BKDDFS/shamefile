@@ -43,7 +43,7 @@ fn cascade_match(
         let v_file = v.path.to_string_lossy();
         let v_hash = content_hash(&v.line_content);
         if let Some(oi) = old_entries.iter().enumerate().find_map(|(i, e)| {
-            if e2v[i].is_none() && e.shame_vector == v_hash && e.token == v.matched_token {
+            if e2v[i].is_none() && e.content == v_hash && e.token == v.matched_token {
                 let file_matches = e.file() == v_file.as_ref()
                     || renames
                         .get(e.file())
@@ -297,7 +297,7 @@ fn handle_normal(
     let mut removed_count = 0;
     let mut errors_found = false;
 
-    // 3a. Build entries from matched violations (preserve metadata, update location/shame_vector)
+    // 3a. Build entries from matched violations (preserve metadata, update location/content)
     for (vi, v) in violations.iter().enumerate() {
         let v_path_str = v.path.to_string_lossy().to_string();
         let new_location = Entry::make_location(&v_path_str, v.line_number);
@@ -308,7 +308,7 @@ fn handle_normal(
             registry.entries.push(Entry {
                 location: new_location,
                 token: v.matched_token.clone(),
-                shame_vector: new_sv,
+                content: new_sv,
                 owner: old.owner.clone(),
                 created_at: old.created_at,
                 why: old.why.clone(),
@@ -322,7 +322,7 @@ fn handle_normal(
             registry.entries.push(Entry {
                 location: new_location,
                 token: v.matched_token.clone(),
-                shame_vector: new_sv,
+                content: new_sv,
                 owner: if is_first_run {
                     shamefile::git::get_git_blame_author(&v_path_str, v.line_number, registry_dir)
                         .unwrap_or_else(|| shamefile::git::get_git_current_user(registry_dir))
@@ -410,10 +410,9 @@ fn handle_normal(
 
     if !missing_why.is_empty() {
         for entry in &missing_why {
-            println!(
-                "Missing reason (why): {} at {}",
-                entry.token, entry.location
-            );
+            println!("missing why: {}", entry.token);
+            println!(" --> {}", entry.location);
+            println!();
         }
         errors_found = true;
     }

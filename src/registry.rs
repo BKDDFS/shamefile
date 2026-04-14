@@ -3,13 +3,10 @@ use chrono::{DateTime, NaiveDate, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::fs;
-use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::Path;
 
 pub fn content_hash(line: &str) -> String {
-    let mut hasher = DefaultHasher::new();
-    line.trim().hash(&mut hasher);
-    format!("sv1:{:016x}", hasher.finish())
+    line.trim().to_string()
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,7 +27,7 @@ pub struct Config {}
 pub struct Entry {
     pub location: String,
     pub token: String,
-    pub shame_vector: String,
+    pub content: String,
     #[serde(deserialize_with = "deserialize_created_at")]
     pub created_at: DateTime<Utc>,
     pub owner: String,

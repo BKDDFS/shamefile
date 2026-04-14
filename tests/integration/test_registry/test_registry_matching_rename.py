@@ -2,8 +2,8 @@ import yaml
 from conftest import git_commit, git_init, run_shamefile
 
 
-def test_content_change_updates_shame_vector(tmp_path):
-    """Changing line content should update shame_vector hash while preserving why."""
+def test_content_change_updates_content(tmp_path):
+    """Changing line content should update content hash while preserving why."""
     test_file = tmp_path / "test.py"
     test_file.write_text("x = 1  # noqa\n")
     registry_path = tmp_path / "shamefile.yaml"
@@ -23,8 +23,8 @@ def test_content_change_updates_shame_vector(tmp_path):
     entry = registry["entries"][0]
 
     assert entry["why"] == "Legacy code"
-    assert "shame_vector" in entry
-    assert entry["shame_vector"] != original.get("shame_vector")
+    assert "content" in entry
+    assert entry["content"] != original.get("content")
 
 
 def test_line_shift_and_content_change_reports_unmatched(tmp_path):
