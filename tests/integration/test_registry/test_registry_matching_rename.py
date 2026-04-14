@@ -52,6 +52,65 @@ def test_line_shift_and_content_change_reports_unmatched(tmp_path):
     assert result.returncode == 1
 
 
+def test_same_content_different_file_no_rename_creates_new_entry(tmp_path):
+    """Same content in a new file (not a rename) should not preserve why from old file."""
+    git_init(tmp_path)
+    (tmp_path / "utils.py").write_text("x = 1  # noqa\n")
+    git_commit(tmp_path, "initial")
+
+    run_shamefile(tmp_path)
+    registry_path = tmp_path / "shamefile.yaml"
+    content = registry_path.read_text()
+    registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
+    git_commit(tmp_path, "add shamefile")
+
+    # Developer adds a new file with identical content — NOT a rename, utils.py still exists
+    (tmp_path / "helpers.py").write_text("x = 1  # noqa\n")
+    git_commit(tmp_path, "add helpers")
+
+    run_shamefile(tmp_path)
+
+    registry = yaml.safe_load(registry_path.read_text())
+    entries = registry["entries"]
+    helpers_entry = next(e for e in entries if "helpers.py" in e["location"])
+    utils_entry = next(e for e in entries if "utils.py" in e["location"])
+
+    # Old entry keeps its why
+    assert utils_entry["why"] == "Legacy code"
+    # New file = new entry, must not inherit why from utils.py
+    assert helpers_entry["why"] == ""
+
+
+def test_deleted_file_same_line_in_unrelated_new_file_no_match(tmp_path):
+    """Unrelated new file sharing one suppression line should not inherit why."""
+    git_init(tmp_path)
+    # utils.py has one suppression among many lines
+    utils_content = "\n".join([f"line_{i} = {i}" for i in range(50)]) + "\nx = 1  # noqa\n"
+    (tmp_path / "utils.py").write_text(utils_content)
+    git_commit(tmp_path, "initial")
+
+    run_shamefile(tmp_path)
+    registry_path = tmp_path / "shamefile.yaml"
+    content = registry_path.read_text()
+    registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
+    git_commit(tmp_path, "add shamefile")
+
+    # Delete utils.py, add different helpers.py with same suppression line
+    (tmp_path / "utils.py").unlink()
+    helpers_content = "\n".join([f"other_{i} = {i}" for i in range(50)]) + "\nx = 1  # noqa\n"
+    (tmp_path / "helpers.py").write_text(helpers_content)
+    git_commit(tmp_path, "delete utils, add helpers")
+
+    run_shamefile(tmp_path)
+
+    registry = yaml.safe_load(registry_path.read_text())
+    entries = registry["entries"]
+    helpers_entry = next(e for e in entries if "helpers.py" in e["location"])
+
+    # Different file, git does not see rename (low similarity) — new entry, no inherited why
+    assert helpers_entry["why"] == ""
+
+
 @pytest.mark.xfail(reason=XFAIL_RENAME)
 def test_file_rename_preserves_why(tmp_path):
     """Renaming a file should preserve why (rename detection via git diff --name-status -M)."""
