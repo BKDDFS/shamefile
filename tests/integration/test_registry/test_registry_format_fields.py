@@ -37,3 +37,10 @@ def test_entry_has_recent_created_at(single_entry):
 
     assert isinstance(created_at, datetime)
     assert now - created_at < timedelta(minutes=5)
+
+
+def test_entry_has_shame_vector(single_entry):
+    """Every new entry must have a shame_vector field."""
+    assert "shame_vector" in single_entry
+    assert isinstance(single_entry["shame_vector"], str)
+    assert len(single_entry["shame_vector"]) > 0

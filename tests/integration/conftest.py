@@ -86,6 +86,35 @@ def run_shamefile(cwd, *args):
     )
 
 
+def git_init(path, user="Alice", email="alice@test.com"):
+    """Initialize a git repo with user config. Returns path."""
+    subprocess.run(["git", "init"], cwd=path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "config", "user.name", user],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
+    subprocess.run(
+        ["git", "config", "user.email", email],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
+    return path
+
+
+def git_commit(path, message="commit"):
+    """Stage all and commit."""
+    subprocess.run(["git", "add", "."], cwd=path, capture_output=True, check=True)
+    subprocess.run(
+        ["git", "commit", "-m", message],
+        cwd=path,
+        capture_output=True,
+        check=True,
+    )
+
+
 def parse_languages_from_rust_source() -> dict:
     """Parse LANGUAGES from src/languages.rs, returning {name: {extensions, tokens}}."""
     content = LANGUAGES_RS_PATH.read_text()

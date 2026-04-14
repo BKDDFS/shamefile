@@ -2,11 +2,18 @@ import yaml
 from conftest import run_shamefile
 
 
-def make_entry(location, token="# noqa", why="", owner="Test <test@test.com>"):  # noqa: S107
+def make_entry(
+    location,
+    token="# noqa",  # noqa: S107
+    why="",
+    owner="Test <test@test.com>",
+    shame_vector="sv1:0000000000000000",
+):
     """Create a minimal shamefile entry dict."""
     return {
         "location": location,
         "token": token,
+        "shame_vector": shame_vector,
         "owner": owner,
         "created_at": "2026-01-01T00:00:00Z",
         "why": why,
@@ -29,16 +36,16 @@ def test_unsorted_entries_get_sorted_by_file(tmp_path):
     write_registry(
         registry,
         [
-            make_entry(f"{tmp_path}/z.py:1", why="reason z"),
-            make_entry(f"{tmp_path}/a.py:1", why="reason a"),
+            make_entry("z.py:1", why="reason z"),
+            make_entry("a.py:1", why="reason a"),
         ],
     )
 
     run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
-    assert "a.py" in entries[0]["location"]
-    assert "z.py" in entries[1]["location"]
+    assert entries[0]["location"] == "a.py:1"
+    assert entries[1]["location"] == "z.py:1"
 
 
 def test_unsorted_lines_get_sorted_within_file(tmp_path):
@@ -50,16 +57,16 @@ def test_unsorted_lines_get_sorted_within_file(tmp_path):
     write_registry(
         registry,
         [
-            make_entry(f"{tmp_path}/test.py:3", why="reason 3"),
-            make_entry(f"{tmp_path}/test.py:1", why="reason 1"),
+            make_entry("test.py:3", why="reason 3"),
+            make_entry("test.py:1", why="reason 1"),
         ],
     )
 
     run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
-    assert entries[0]["location"].endswith(":1")
-    assert entries[1]["location"].endswith(":3")
+    assert entries[0]["location"] == "test.py:1"
+    assert entries[1]["location"] == "test.py:3"
 
 
 def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
@@ -72,12 +79,12 @@ def test_unsorted_tokens_get_sorted_on_same_line(tmp_path):
         registry,
         [
             make_entry(
-                f"{tmp_path}/test.py:1",
+                "test.py:1",
                 token="# type: ignore",  # noqa: S106
                 why="reason ti",
             ),
             make_entry(
-                f"{tmp_path}/test.py:1",
+                "test.py:1",
                 token="# noqa",  # noqa: S106
                 why="reason noqa",
             ),
@@ -102,41 +109,41 @@ def test_new_entry_inserted_in_sorted_position(tmp_path):
     write_registry(
         registry,
         [
-            make_entry(f"{tmp_path}/b.py:1", why="reason b"),
-            make_entry(f"{tmp_path}/z.py:1", why="reason z"),
+            make_entry("b.py:1", why="reason b"),
+            make_entry("z.py:1", why="reason z"),
         ],
     )
 
     run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
-    basenames = [e["location"].split("/")[-1] for e in entries]
-    assert basenames[0] == "a.py:1"
+    assert entries[0]["location"] == "a.py:1"
 
 
 def test_ordering_preserved_after_stale_removal(tmp_path):
-    """After stale removal, remaining entries should still be sorted."""
+    """After file deletion, remaining entries should still be sorted."""
     (tmp_path / "a.py").write_text("x = 1  # noqa\n")
     (tmp_path / "z.py").write_text("x = 1  # noqa\n")
     registry = tmp_path / "shamefile.yaml"
 
-    # Registry has z.py, m.py (stale), a.py — wrong order
+    # Registry has z.py, m.py (file deleted = auto-remove), a.py — wrong order
     write_registry(
         registry,
         [
-            make_entry(f"{tmp_path}/z.py:1", why="reason z"),
-            make_entry(f"{tmp_path}/m.py:1", why="reason m"),
-            make_entry(f"{tmp_path}/a.py:1", why="reason a"),
+            make_entry("z.py:1", why="reason z"),
+            make_entry("m.py:1", why="reason m"),
+            make_entry("a.py:1", why="reason a"),
         ],
     )
 
     run_shamefile(tmp_path)
 
     entries = yaml.safe_load(registry.read_text())["entries"]
+    # m.py entry removed (file deleted), a.py and z.py matched and preserved
     expected_entries = 2  # a.py + z.py
     assert len(entries) == expected_entries
-    assert "a.py" in entries[0]["location"]
-    assert "z.py" in entries[1]["location"]
+    assert entries[0]["location"] == "a.py:1"
+    assert entries[1]["location"] == "z.py:1"
 
 
 def test_ordering_stable_across_reruns(tmp_path):

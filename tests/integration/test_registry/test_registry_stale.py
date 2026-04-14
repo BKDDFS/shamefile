@@ -251,6 +251,7 @@ def test_absolute_path_entry_detected_as_stale(tmp_path):
             {
                 "location": "a.py:1",
                 "token": "# noqa",
+                "shame_vector": "sv1:0000000000000000",
                 "owner": "Test <test@test.com>",
                 "created_at": "2026-01-01T00:00:00Z",
                 "why": "Valid",
@@ -258,6 +259,7 @@ def test_absolute_path_entry_detected_as_stale(tmp_path):
             {
                 "location": f"{tmp_path}/deleted.py:1",
                 "token": "# noqa",
+                "shame_vector": "sv1:0000000000000000",
                 "owner": "Test <test@test.com>",
                 "created_at": "2026-01-01T00:00:00Z",
                 "why": "Should be removed",
@@ -291,6 +293,7 @@ def test_absolute_path_entry_stale_with_scoped_scan(tmp_path):
             {
                 "location": "src/a.py:1",
                 "token": "# noqa",
+                "shame_vector": "sv1:0000000000000000",
                 "owner": "Test <test@test.com>",
                 "created_at": "2026-01-01T00:00:00Z",
                 "why": "Valid",
@@ -298,6 +301,7 @@ def test_absolute_path_entry_stale_with_scoped_scan(tmp_path):
             {
                 "location": f"{tmp_path}/src/deleted.py:1",
                 "token": "# noqa",
+                "shame_vector": "sv1:0000000000000000",
                 "owner": "Test <test@test.com>",
                 "created_at": "2026-01-01T00:00:00Z",
                 "why": "Should be removed",

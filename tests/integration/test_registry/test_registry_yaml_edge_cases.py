@@ -150,6 +150,7 @@ def test_non_utc_timezone_normalized_to_utc(tmp_path):
         "entries:\n"
         "  - location: './test.py:1'\n"
         "    token: '# noqa'\n"
+        "    shame_vector: 'sv1:0000000000000000'\n"
         "    owner: 'Alice'\n"
         "    created_at: '2024-01-15T10:00:00+05:30'\n"
         "    why: 'Legacy'\n"
@@ -196,11 +197,13 @@ def test_yaml_scalar_anchor_resolved(tmp_path):
         "entries:\n"
         "  - location: test.py:1\n"
         "    token: '# noqa'\n"
+        "    shame_vector: 'sv1:0000000000000000'\n"
         "    owner: &alice Alice\n"
         "    created_at: '2024-01-15T00:00:00Z'\n"
         "    why: Legacy\n"
         "  - location: test.py:2\n"
         "    token: '# type: ignore'\n"
+        "    shame_vector: 'sv1:0000000000000001'\n"
         "    owner: *alice\n"
         "    created_at: '2024-01-15T00:00:00Z'\n"
         "    why: Legacy\n"
@@ -223,11 +226,13 @@ def test_duplicate_entries_rejected(tmp_path):
         "entries:\n"
         "  - location: './test.py:1'\n"
         "    token: '# noqa'\n"
+        "    shame_vector: 'sv1:0000000000000000'\n"
         "    owner: 'Alice'\n"
         "    created_at: '2024-01-15T00:00:00Z'\n"
         "    why: 'Legacy from 2019'\n"
         "  - location: './test.py:1'\n"
         "    token: '# noqa'\n"
+        "    shame_vector: 'sv1:0000000000000000'\n"
         "    owner: 'Bob'\n"
         "    created_at: '2024-02-01T00:00:00Z'\n"
         "    why: 'Performance workaround per JIRA-456'\n"
@@ -244,7 +249,7 @@ def test_duplicate_entries_rejected(tmp_path):
     # IDE-clickable references to BOTH duplicate rows in shamefile.yaml itself.
     # Entries start at lines 3 and 8 of the fixture written above.
     assert "shamefile.yaml:3" in output
-    assert "shamefile.yaml:8" in output
+    assert "shamefile.yaml:9" in output
 
 
 def test_plain_date_in_created_at_accepted(tmp_path):
@@ -255,6 +260,7 @@ def test_plain_date_in_created_at_accepted(tmp_path):
         "entries:\n"
         "  - location: 'test.py:1'\n"
         "    token: '# noqa'\n"
+        "    shame_vector: 'sv1:0000000000000000'\n"
         "    owner: 'Alice'\n"
         "    created_at: '2024-01-15'\n"
         "    why: 'Legacy'\n"

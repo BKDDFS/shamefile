@@ -4,8 +4,6 @@ import pytest
 import yaml
 from conftest import run_shamefile
 
-XFAIL_MATCHING = "shame_vector and cascade matching not yet implemented"
-
 
 @pytest.fixture
 def line_shifted_entry(tmp_path):
@@ -65,21 +63,18 @@ def line_shifted_entry(tmp_path):
     return original, updated
 
 
-@pytest.mark.xfail(reason=XFAIL_MATCHING)
 def test_line_shift_preserves_why(line_shifted_entry):
     """Suppression moving to a different line should preserve why."""
     _, entry = line_shifted_entry
     assert entry["why"] == "Legacy code"
 
 
-@pytest.mark.xfail(reason=XFAIL_MATCHING)
 def test_line_shift_preserves_owner(line_shifted_entry):
     """Suppression moving to a different line should preserve owner."""
     original, entry = line_shifted_entry
     assert entry["owner"] == original["owner"]
 
 
-@pytest.mark.xfail(reason=XFAIL_MATCHING)
 def test_line_shift_preserves_created_at(line_shifted_entry):
     """Suppression moving to a different line should preserve created_at."""
     original, entry = line_shifted_entry
@@ -135,14 +130,12 @@ def two_entries_shifted(tmp_path):
     return originals, updated
 
 
-@pytest.mark.xfail(reason=XFAIL_MATCHING)
 def test_multiple_entries_shift_simultaneously(two_entries_shifted):
     """Multiple entries shifting at once should all preserve why."""
     _, updated = two_entries_shifted
     assert all(e["why"] == "Justified" for e in updated)
 
 
-@pytest.mark.xfail(reason=XFAIL_MATCHING)
 def test_one_shifts_one_stays(tmp_path):
     """One entry shifts, another stays — both should preserve why."""
     test_file = tmp_path / "test.py"
@@ -162,7 +155,6 @@ def test_one_shifts_one_stays(tmp_path):
     assert all(e["why"] == "Justified" for e in registry["entries"])
 
 
-@pytest.mark.xfail(reason=XFAIL_MATCHING)
 def test_large_line_shift(tmp_path):
     """Suppression shifting by many lines should still preserve why."""
     subprocess.run(["git", "init"], cwd=tmp_path, capture_output=True, check=True)

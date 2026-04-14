@@ -1,10 +1,90 @@
 use anyhow::{Context, Result};
 use chrono::Utc;
 use clap::{Parser, Subcommand};
-use shamefile::registry::{Entry, Registry};
+use shamefile::registry::{Entry, Registry, content_hash};
 use shamefile::scanner;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
+
+struct MatchResult {
+    violation_to_entry: Vec<Option<usize>>,
+    entry_to_violation: Vec<Option<usize>>,
+}
+
+fn cascade_match(old_entries: &[Entry], violations: &[scanner::Violation]) -> MatchResult {
+    let mut v2e: Vec<Option<usize>> = vec![None; violations.len()];
+    let mut e2v: Vec<Option<usize>> = vec![None; old_entries.len()];
+
+    // Pass A: location match — covers exact match and content-changed-same-line
+    for (vi, v) in violations.iter().enumerate() {
+        let v_location = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
+        if let Some(oi) = old_entries.iter().enumerate().find_map(|(i, e)| {
+            if e2v[i].is_none() && e.location == v_location && e.token == v.matched_token {
+                Some(i)
+            } else {
+                None
+            }
+        }) {
+            v2e[vi] = Some(oi);
+            e2v[oi] = Some(vi);
+        }
+    }
+
+    // Pass B: content hash match — covers line shift (same content, different line)
+    for (vi, v) in violations.iter().enumerate() {
+        if v2e[vi].is_some() {
+            continue;
+        }
+        let v_file = v.path.to_string_lossy();
+        let v_hash = content_hash(&v.line_content);
+        if let Some(oi) = old_entries.iter().enumerate().find_map(|(i, e)| {
+            if e2v[i].is_none()
+                && e.file() == v_file.as_ref()
+                && e.shame_vector == v_hash
+                && e.token == v.matched_token
+            {
+                Some(i)
+            } else {
+                None
+            }
+        }) {
+            v2e[vi] = Some(oi);
+            e2v[oi] = Some(vi);
+        }
+    }
+
+    MatchResult {
+        violation_to_entry: v2e,
+        entry_to_violation: e2v,
+    }
+}
+
+fn is_entry_in_scope(
+    entry: &Entry,
+    scanned_files: &HashSet<PathBuf>,
+    skipped_files: &HashSet<PathBuf>,
+    scan_paths_canonical: &[PathBuf],
+    registry_dir_canonical: &Path,
+) -> bool {
+    let entry_file_raw = PathBuf::from(entry.file());
+    let entry_file = if entry_file_raw.is_absolute() {
+        entry_file_raw
+            .strip_prefix(registry_dir_canonical)
+            .map(|p| p.to_path_buf())
+            .unwrap_or(entry_file_raw)
+    } else {
+        entry_file_raw
+    };
+    if scanned_files.contains(&entry_file) {
+        true
+    } else if skipped_files.contains(&entry_file) {
+        false
+    } else {
+        scan_paths_canonical
+            .iter()
+            .any(|sp| entry_file.starts_with(sp))
+    }
+}
 
 #[derive(Parser)]
 #[command(name = "shame")]
@@ -191,53 +271,10 @@ fn handle_normal(
 
     println!("Found {} suppressions in code.", violations.len());
 
-    let mut new_entries_count = 0;
-    let mut errors_found = false;
+    // 3. Cascade matching: reconcile violations with existing entries
+    let matches = cascade_match(&registry.entries, &violations);
+    let old_entries = std::mem::take(&mut registry.entries);
 
-    // 3. Add new suppressions to registry
-    for violation in &violations {
-        let violation_path_str = violation.path.to_string_lossy().to_string();
-
-        let violation_location = Entry::make_location(&violation_path_str, violation.line_number);
-
-        let existing = registry
-            .entries
-            .iter()
-            .find(|e| e.location == violation_location && e.token == violation.matched_token);
-
-        if let Some(entry) = existing {
-            if entry.why.trim().is_empty() {
-                errors_found = true;
-            }
-        } else {
-            println!(
-                "New suppression detected: {} at {}:{}",
-                violation.matched_token, violation_path_str, violation.line_number
-            );
-            registry.entries.push(Entry {
-                location: violation_location,
-                token: violation.matched_token.clone(),
-                owner: if is_first_run {
-                    shamefile::git::get_git_blame_author(
-                        &violation_path_str,
-                        violation.line_number,
-                        registry_dir,
-                    )
-                    .unwrap_or_else(|| shamefile::git::get_git_current_user(registry_dir))
-                } else {
-                    shamefile::git::get_git_current_user(registry_dir)
-                },
-                created_at: Utc::now(),
-                why: String::new(),
-            });
-            new_entries_count += 1;
-            errors_found = true;
-        }
-    }
-
-    // 4. Remove stale entries (only if file is within scanned scope)
-    //    A file is "in scope" if it was visited by the scanner OR if it falls
-    //    under any of the scan paths (covers deleted/gitignored files).
     let registry_dir_canonical =
         std::fs::canonicalize(registry_dir).unwrap_or_else(|_| registry_dir.to_path_buf());
     let scan_paths_canonical: Vec<PathBuf> = scan_paths
@@ -249,10 +286,66 @@ fn handle_normal(
                 .unwrap_or(c)
         })
         .collect();
-    let initial_count = registry.entries.len();
-    registry.entries.retain(|entry| {
-        let entry_file_raw = PathBuf::from(entry.file());
-        let entry_file = if entry_file_raw.is_absolute() {
+
+    let mut new_entries_count = 0;
+    let mut removed_count = 0;
+    let mut errors_found = false;
+
+    // 3a. Build entries from matched violations (preserve metadata, update location/shame_vector)
+    for (vi, v) in violations.iter().enumerate() {
+        let v_path_str = v.path.to_string_lossy().to_string();
+        let new_location = Entry::make_location(&v_path_str, v.line_number);
+        let new_sv = content_hash(&v.line_content);
+
+        if let Some(oi) = matches.violation_to_entry[vi] {
+            let old = &old_entries[oi];
+            registry.entries.push(Entry {
+                location: new_location,
+                token: v.matched_token.clone(),
+                shame_vector: new_sv,
+                owner: old.owner.clone(),
+                created_at: old.created_at,
+                why: old.why.clone(),
+            });
+        } else {
+            // New entry — no match in old registry
+            println!(
+                "New suppression detected: {} at {}:{}",
+                v.matched_token, v_path_str, v.line_number
+            );
+            registry.entries.push(Entry {
+                location: new_location,
+                token: v.matched_token.clone(),
+                shame_vector: new_sv,
+                owner: if is_first_run {
+                    shamefile::git::get_git_blame_author(&v_path_str, v.line_number, registry_dir)
+                        .unwrap_or_else(|| shamefile::git::get_git_current_user(registry_dir))
+                } else {
+                    shamefile::git::get_git_current_user(registry_dir)
+                },
+                created_at: Utc::now(),
+                why: String::new(),
+            });
+            new_entries_count += 1;
+            errors_found = true;
+        }
+    }
+
+    // 3b. Handle unmatched old entries
+    let mut unmatched_stale = Vec::new();
+    for (oi, old) in old_entries.iter().enumerate() {
+        if matches.entry_to_violation[oi].is_some() {
+            continue; // already handled above
+        }
+        let in_scope = is_entry_in_scope(
+            old,
+            &scanned_files,
+            &skipped_files,
+            &scan_paths_canonical,
+            &registry_dir_canonical,
+        );
+        let entry_file_raw = PathBuf::from(old.file());
+        let entry_file_normalized = if entry_file_raw.is_absolute() {
             entry_file_raw
                 .strip_prefix(&registry_dir_canonical)
                 .map(|p| p.to_path_buf())
@@ -260,33 +353,44 @@ fn handle_normal(
         } else {
             entry_file_raw
         };
-        let in_scope = if scanned_files.contains(&entry_file) {
-            true
-        } else if skipped_files.contains(&entry_file) {
-            false // file exists but couldn't be read — don't assume stale
-        } else {
-            scan_paths_canonical
-                .iter()
-                .any(|sp| entry_file.starts_with(sp))
-        };
         if !in_scope {
-            return true; // not in scan scope — leave it alone
+            // Out of scan scope — preserve unchanged
+            registry.entries.push(old.clone());
+        } else if scanned_files.contains(&entry_file_normalized) {
+            // File was scanned. Check if any violation in this file has the same token
+            // (but didn't match by location or content hash).
+            let has_token_in_file = violations
+                .iter()
+                .any(|v| v.path == entry_file_normalized && v.matched_token == old.token);
+            if has_token_in_file {
+                // Token still exists in file but cascade didn't match — line and content both changed
+                unmatched_stale.push(old.clone());
+            } else {
+                // Token completely gone from file — safe to auto-remove
+                println!("Removing stale entry: {} at {}", old.token, old.location);
+                removed_count += 1;
+            }
+        } else {
+            // File deleted or gitignored — safe to auto-remove
+            println!("Removing stale entry: {} at {}", old.token, old.location);
+            removed_count += 1;
         }
-        let is_valid = violations.iter().any(|v| {
-            let loc = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
-            loc == entry.location && v.matched_token == entry.token
-        });
-        if !is_valid {
+    }
+
+    if !unmatched_stale.is_empty() {
+        println!("Unmatched stale entries (algorithmic matching failed):");
+        for e in &unmatched_stale {
             println!(
-                "Removing stale entry: {} at {}",
-                entry.token, entry.location
+                "  - {} at {} (line changed or removed)",
+                e.token, e.location
             );
         }
-        is_valid
-    });
-    let removed_count = initial_count - registry.entries.len();
+        // Keep them in registry — user must resolve manually
+        registry.entries.extend(unmatched_stale);
+        errors_found = true;
+    }
 
-    // 5. Validate justifications
+    // 4. Validate justifications
     let missing_why: Vec<_> = registry
         .entries
         .iter()
@@ -303,7 +407,7 @@ fn handle_normal(
         errors_found = true;
     }
 
-    // 6. Save registry
+    // 5. Save registry
     registry
         .save(config_path)
         .context("Failed to save registry")?;
@@ -322,7 +426,7 @@ fn handle_normal(
         );
     }
 
-    // 7. Exit 1 if registry changed or errors
+    // 6. Exit 1 if registry changed or errors
     if removed_count > 0 {
         errors_found = true;
     }
@@ -390,17 +494,16 @@ fn handle_dry_run(
 
     let mut failed = false;
 
+    // Use cascade matching for coverage and stale checks
+    let matches = cascade_match(&registry.entries, &violations);
+
     // Step 2: Coverage check (code ⊆ registry)
     println!("\nStep 2: Checking coverage (code -> shamefile)...");
     let undocumented: Vec<_> = violations
         .iter()
-        .filter(|v| {
-            let loc = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
-            !registry
-                .entries
-                .iter()
-                .any(|e| e.location == loc && e.token == v.matched_token)
-        })
+        .enumerate()
+        .filter(|(vi, _)| matches.violation_to_entry[*vi].is_none())
+        .map(|(_, v)| v)
         .collect();
 
     if undocumented.is_empty() {
@@ -437,33 +540,20 @@ fn handle_dry_run(
     let stale: Vec<_> = registry
         .entries
         .iter()
-        .filter(|e| {
-            let entry_file_raw = PathBuf::from(e.file());
-            let entry_file = if entry_file_raw.is_absolute() {
-                entry_file_raw
-                    .strip_prefix(&registry_dir_canonical)
-                    .map(|p| p.to_path_buf())
-                    .unwrap_or(entry_file_raw)
-            } else {
-                entry_file_raw
-            };
-            let in_scope = if scanned_files.contains(&entry_file) {
-                true
-            } else if skipped_files.contains(&entry_file) {
-                false
-            } else {
-                scan_paths_canonical
-                    .iter()
-                    .any(|sp| entry_file.starts_with(sp))
-            };
-            if !in_scope {
-                return false; // not in scan scope — not stale
+        .enumerate()
+        .filter(|(oi, e)| {
+            if matches.entry_to_violation[*oi].is_some() {
+                return false; // matched by cascade
             }
-            !violations.iter().any(|v| {
-                let loc = Entry::make_location(&v.path.to_string_lossy(), v.line_number);
-                loc == e.location && v.matched_token == e.token
-            })
+            is_entry_in_scope(
+                e,
+                &scanned_files,
+                &skipped_files,
+                &scan_paths_canonical,
+                &registry_dir_canonical,
+            )
         })
+        .map(|(_, e)| e)
         .collect();
 
     if stale.is_empty() {
