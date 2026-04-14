@@ -200,7 +200,7 @@ fn filter_and_normalize(
             }
 
             if let Ok(relative) = v_canonical.strip_prefix(&registry_dir_canonical) {
-                v.path = relative.to_path_buf();
+                v.path = PathBuf::from("./").join(relative);
             }
 
             Some(v)
@@ -213,7 +213,7 @@ fn filter_and_normalize(
             .filter_map(|f| {
                 let f_canonical = std::fs::canonicalize(&f).ok()?;
                 if let Ok(relative) = f_canonical.strip_prefix(&registry_dir_canonical) {
-                    Some(relative.to_path_buf())
+                    Some(PathBuf::from("./").join(relative))
                 } else {
                     Some(f)
                 }

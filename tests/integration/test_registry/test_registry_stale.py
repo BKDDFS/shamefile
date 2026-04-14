@@ -249,7 +249,7 @@ def test_absolute_path_entry_detected_as_stale(tmp_path):
         "config": {},
         "entries": [
             {
-                "location": "a.py:1",
+                "location": "./a.py:1",
                 "token": "# noqa",
                 "shame_vector": "sv1:0000000000000000",
                 "owner": "Test <test@test.com>",
@@ -272,7 +272,7 @@ def test_absolute_path_entry_detected_as_stale(tmp_path):
 
     entries = yaml.safe_load(registry_path.read_text())["entries"]
     locations = [e["location"] for e in entries]
-    assert "a.py:1" in locations
+    assert "./a.py:1" in locations
     assert not any("deleted.py" in loc for loc in locations), (
         "Entry with absolute path for non-existent file should be removed as stale"
     )
@@ -291,7 +291,7 @@ def test_absolute_path_entry_stale_with_scoped_scan(tmp_path):
         "config": {},
         "entries": [
             {
-                "location": "src/a.py:1",
+                "location": "./src/a.py:1",
                 "token": "# noqa",
                 "shame_vector": "sv1:0000000000000000",
                 "owner": "Test <test@test.com>",
@@ -320,7 +320,7 @@ def test_absolute_path_entry_stale_with_scoped_scan(tmp_path):
 
     entries = yaml.safe_load(registry_path.read_text())["entries"]
     locations = [e["location"] for e in entries]
-    assert "src/a.py:1" in locations
+    assert "./src/a.py:1" in locations
     assert not any("deleted.py" in loc for loc in locations), (
         "Absolute-path entry under scanned subdir should be removed as stale"
     )

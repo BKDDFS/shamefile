@@ -82,7 +82,11 @@ impl Entry {
     }
 
     pub fn make_location(file: &str, line: u32) -> String {
-        format!("{}:{}", file, line)
+        if file.starts_with("./") || file.starts_with('/') {
+            format!("{file}:{line}")
+        } else {
+            format!("./{file}:{line}")
+        }
     }
 }
 
@@ -130,12 +134,7 @@ impl Registry {
 
     pub fn load(path: &Path) -> Result<Self, ShamefileError> {
         let content = fs::read_to_string(path).map_err(ShamefileError::RegistryReadError)?;
-        let mut registry: Registry = serde_yaml::from_str(&content)?;
-        for entry in &mut registry.entries {
-            if let Some(stripped) = entry.location.strip_prefix("./") {
-                entry.location = stripped.to_string();
-            }
-        }
+        let registry: Registry = serde_yaml::from_str(&content)?;
 
         let entry_lines = extract_entry_start_lines(&content);
         let mut groups: BTreeMap<(&str, &str), Vec<Option<usize>>> = BTreeMap::new();

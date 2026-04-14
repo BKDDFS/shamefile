@@ -94,7 +94,17 @@ pub fn detect_renames(registry_dir: &Path) -> std::collections::HashMap<String, 
     for line in text.lines() {
         let parts: Vec<&str> = line.split('\t').collect();
         if parts.len() == 3 && parts[0].starts_with('R') {
-            renames.insert(parts[1].to_string(), parts[2].to_string());
+            let old = if parts[1].starts_with("./") {
+                parts[1].to_string()
+            } else {
+                format!("./{}", parts[1])
+            };
+            let new = if parts[2].starts_with("./") {
+                parts[2].to_string()
+            } else {
+                format!("./{}", parts[2])
+            };
+            renames.insert(old, new);
         }
     }
     renames

@@ -264,8 +264,8 @@ def test_mixed_committed_and_uncommitted_owners(tmp_path):
     assert len(entries) == expected_entries
 
     by_file = {e["location"].split(":")[0]: e for e in entries}
-    assert by_file["old.py"]["owner"] == "Alice <alice@test.com>"
-    assert by_file["new.py"]["owner"] == "Bob <bob@test.com>"
+    assert by_file["./old.py"]["owner"] == "Alice <alice@test.com>"
+    assert by_file["./new.py"]["owner"] == "Bob <bob@test.com>"
 
 
 def test_staged_uncommitted_file_not_attributed_to_not_committed_yet(tmp_path):
