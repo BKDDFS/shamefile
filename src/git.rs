@@ -75,6 +75,31 @@ pub fn get_git_blame_author(file: &str, line: u32, repo_path: &Path) -> Option<S
     }
 }
 
+/// Detect file renames in the last commit using `git diff HEAD~1..HEAD --name-status -M`.
+/// Returns a map of old_path -> new_path for renamed files.
+/// Returns empty map if git is unavailable or there are no commits.
+pub fn detect_renames(registry_dir: &Path) -> std::collections::HashMap<String, String> {
+    let output = Command::new("git")
+        .args(["diff", "HEAD~1..HEAD", "--name-status", "-M"])
+        .current_dir(registry_dir)
+        .output();
+
+    let output = match output {
+        Ok(o) if o.status.success() => o,
+        _ => return std::collections::HashMap::new(),
+    };
+
+    let text = String::from_utf8_lossy(&output.stdout);
+    let mut renames = std::collections::HashMap::new();
+    for line in text.lines() {
+        let parts: Vec<&str> = line.split('\t').collect();
+        if parts.len() == 3 && parts[0].starts_with('R') {
+            renames.insert(parts[1].to_string(), parts[2].to_string());
+        }
+    }
+    renames
+}
+
 fn get_git_config(key: &str, repo_path: &Path) -> Option<String> {
     let output = Command::new("git")
         .arg("config")

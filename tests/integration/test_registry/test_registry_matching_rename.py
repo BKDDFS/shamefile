@@ -1,8 +1,5 @@
-import pytest
 import yaml
 from conftest import git_commit, git_init, run_shamefile
-
-XFAIL_RENAME = "rename detection (git diff --name-status -M) not yet implemented"
 
 
 def test_content_change_updates_shame_vector(tmp_path):
@@ -111,12 +108,18 @@ def test_deleted_file_same_line_in_unrelated_new_file_no_match(tmp_path):
     assert helpers_entry["why"] == ""
 
 
-@pytest.mark.xfail(reason=XFAIL_RENAME)
-def test_file_rename_preserves_why(tmp_path):
-    """Renaming a file should preserve why (rename detection via git diff --name-status -M)."""
+def _make_realistic_file(suppression_line):
+    """Build a multi-line Python file with a suppression in the middle."""
+    before = "\n".join([f"line_{i} = {i}" for i in range(10)])
+    after = "\n".join([f"line_{i} = {i}" for i in range(10, 20)])
+    return f"{before}\n{suppression_line}\n{after}\n"
+
+
+def _setup_rename_test(tmp_path, suppression_line="x = 1  # noqa"):
+    """Create git repo with utils.py, run shamefile, fill why, commit."""
     git_init(tmp_path)
     test_file = tmp_path / "utils.py"
-    test_file.write_text("x = 1  # noqa\n")
+    test_file.write_text(_make_realistic_file(suppression_line))
     git_commit(tmp_path, "initial")
 
     run_shamefile(tmp_path)
@@ -124,8 +127,13 @@ def test_file_rename_preserves_why(tmp_path):
     content = registry_path.read_text()
     registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
     git_commit(tmp_path, "add shamefile")
+    return test_file, registry_path
 
-    # Rename via git mv so git tracks the rename
+
+def test_file_rename_preserves_why(tmp_path):
+    """Renaming a file should preserve why (rename detection via git diff --name-status -M)."""
+    test_file, registry_path = _setup_rename_test(tmp_path)
+
     test_file.rename(tmp_path / "helpers.py")
     git_commit(tmp_path, "rename utils to helpers")
 
@@ -138,23 +146,13 @@ def test_file_rename_preserves_why(tmp_path):
     assert "helpers.py" in entry["location"]
 
 
-@pytest.mark.xfail(reason=XFAIL_RENAME)
 def test_file_rename_plus_content_change_reports_unmatched(tmp_path):
-    """Renaming file + changing content = unmatched, tool should not auto-remove."""
-    git_init(tmp_path)
-    test_file = tmp_path / "utils.py"
-    test_file.write_text("x = 1  # noqa\n")
-    git_commit(tmp_path, "initial")
+    """Renaming file + changing suppression line = unmatched, should not auto-remove."""
+    test_file, registry_path = _setup_rename_test(tmp_path)
 
-    run_shamefile(tmp_path)
-    registry_path = tmp_path / "shamefile.yaml"
-    content = registry_path.read_text()
-    registry_path.write_text(content.replace("why: ''", "why: 'Legacy code'"))
-    git_commit(tmp_path, "add shamefile")
-
-    # Rename + change content
+    # Rename + change only the suppression line (surrounding code keeps git similarity high)
     test_file.unlink()
-    (tmp_path / "helpers.py").write_text("y = calculate()  # noqa\n")
+    (tmp_path / "helpers.py").write_text(_make_realistic_file("y = calculate()  # noqa"))
     git_commit(tmp_path, "rename and change content")
 
     result = run_shamefile(tmp_path)

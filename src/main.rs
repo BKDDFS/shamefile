@@ -11,7 +11,11 @@ struct MatchResult {
     entry_to_violation: Vec<Option<usize>>,
 }
 
-fn cascade_match(old_entries: &[Entry], violations: &[scanner::Violation]) -> MatchResult {
+fn cascade_match(
+    old_entries: &[Entry],
+    violations: &[scanner::Violation],
+    renames: &std::collections::HashMap<String, String>,
+) -> MatchResult {
     let mut v2e: Vec<Option<usize>> = vec![None; violations.len()];
     let mut e2v: Vec<Option<usize>> = vec![None; old_entries.len()];
 
@@ -31,6 +35,7 @@ fn cascade_match(old_entries: &[Entry], violations: &[scanner::Violation]) -> Ma
     }
 
     // Pass B: content hash match — covers line shift (same content, different line)
+    // Also handles renames: if entry's file was renamed, match against the new file name.
     for (vi, v) in violations.iter().enumerate() {
         if v2e[vi].is_some() {
             continue;
@@ -38,12 +43,12 @@ fn cascade_match(old_entries: &[Entry], violations: &[scanner::Violation]) -> Ma
         let v_file = v.path.to_string_lossy();
         let v_hash = content_hash(&v.line_content);
         if let Some(oi) = old_entries.iter().enumerate().find_map(|(i, e)| {
-            if e2v[i].is_none()
-                && e.file() == v_file.as_ref()
-                && e.shame_vector == v_hash
-                && e.token == v.matched_token
-            {
-                Some(i)
+            if e2v[i].is_none() && e.shame_vector == v_hash && e.token == v.matched_token {
+                let file_matches = e.file() == v_file.as_ref()
+                    || renames
+                        .get(e.file())
+                        .is_some_and(|new| new == v_file.as_ref());
+                if file_matches { Some(i) } else { None }
             } else {
                 None
             }
@@ -272,7 +277,8 @@ fn handle_normal(
     println!("Found {} suppressions in code.", violations.len());
 
     // 3. Cascade matching: reconcile violations with existing entries
-    let matches = cascade_match(&registry.entries, &violations);
+    let renames = shamefile::git::detect_renames(registry_dir);
+    let matches = cascade_match(&registry.entries, &violations, &renames);
     let old_entries = std::mem::take(&mut registry.entries);
 
     let registry_dir_canonical =
@@ -353,15 +359,20 @@ fn handle_normal(
         } else {
             entry_file_raw
         };
+        // If file was renamed, use the new name for scanned_files/violations checks
+        let effective_file = renames
+            .get(old.file())
+            .map(PathBuf::from)
+            .unwrap_or(entry_file_normalized);
         if !in_scope {
             // Out of scan scope — preserve unchanged
             registry.entries.push(old.clone());
-        } else if scanned_files.contains(&entry_file_normalized) {
-            // File was scanned. Check if any violation in this file has the same token
-            // (but didn't match by location or content hash).
+        } else if scanned_files.contains(&effective_file) {
+            // File was scanned (or its rename target was). Check if any violation
+            // in this file has the same token.
             let has_token_in_file = violations
                 .iter()
-                .any(|v| v.path == entry_file_normalized && v.matched_token == old.token);
+                .any(|v| v.path == effective_file && v.matched_token == old.token);
             if has_token_in_file {
                 // Token still exists in file but cascade didn't match — line and content both changed
                 unmatched_stale.push(old.clone());
@@ -495,7 +506,8 @@ fn handle_dry_run(
     let mut failed = false;
 
     // Use cascade matching for coverage and stale checks
-    let matches = cascade_match(&registry.entries, &violations);
+    let renames = shamefile::git::detect_renames(registry_dir);
+    let matches = cascade_match(&registry.entries, &violations, &renames);
 
     // Step 2: Coverage check (code ⊆ registry)
     println!("\nStep 2: Checking coverage (code -> shamefile)...");
