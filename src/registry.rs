@@ -87,7 +87,7 @@ impl Entry {
 /// The result is parallel to `Vec<Entry>` produced by serde_yaml, since both
 /// preserve sequence order. Used to point users at the duplicate row in
 /// `shamefile.yaml` so the location is IDE-clickable.
-fn extract_entry_start_lines(content: &str) -> Vec<usize> {
+pub fn extract_entry_start_lines(content: &str) -> Vec<usize> {
     let mut lines = Vec::new();
     let mut in_entries = false;
 
@@ -100,7 +100,7 @@ fn extract_entry_start_lines(content: &str) -> Vec<usize> {
             in_entries = true;
             continue;
         }
-        if in_entries && indent == 0 && !trimmed.is_empty() {
+        if in_entries && indent == 0 && !trimmed.is_empty() && !trimmed.starts_with("- ") {
             in_entries = false;
             continue;
         }
@@ -174,6 +174,26 @@ impl Registry {
         let content = serde_yaml::to_string(self)?;
         // Add blank line between entries for readability
         let content = content.replace("\n- location:", "\n\n- location:");
+        // Force-quote why values that serde_yaml left unquoted
+        let content = content
+            .lines()
+            .map(|line| {
+                if let Some(value) = line.strip_prefix("  why: ") {
+                    if value.starts_with('\'')
+                        || value.starts_with('"')
+                        || value.starts_with('|')
+                        || value.starts_with('>')
+                    {
+                        line.to_string()
+                    } else {
+                        format!("  why: '{}'", value.replace('\'', "''"))
+                    }
+                } else {
+                    line.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
         fs::write(path, content).map_err(ShamefileError::RegistryWriteError)?;
         Ok(())
     }

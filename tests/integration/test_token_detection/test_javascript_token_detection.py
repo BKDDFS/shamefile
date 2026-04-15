@@ -1,3 +1,4 @@
+import yaml
 from conftest import run_shamefile
 
 
@@ -9,7 +10,9 @@ def test_token_inside_template_literal_is_not_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
-    assert "// eslint-disable" not in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry.get("entries") or []
+    assert not any("eslint-disable" in e["token"] for e in entries)
 
 
 def test_token_inside_string_is_not_detected(tmp_path):
@@ -20,7 +23,9 @@ def test_token_inside_string_is_not_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
-    assert "// eslint-disable" not in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry.get("entries") or []
+    assert not any("eslint-disable" in e["token"] for e in entries)
 
 
 def test_block_level_suppression(tmp_path):
@@ -31,7 +36,8 @@ def test_block_level_suppression(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "eslint-disable" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any("eslint-disable" in e["token"] for e in registry["entries"])
 
 
 def test_next_line_variant_detected(tmp_path):
@@ -42,4 +48,5 @@ def test_next_line_variant_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "// eslint-disable" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any("// eslint-disable" in e["token"] for e in registry["entries"])

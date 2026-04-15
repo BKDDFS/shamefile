@@ -28,8 +28,8 @@ def test_empty_shamefile_yaml(tmp_path):
     result = run_shamefile(tmp_path)
 
     # Should work — empty YAML deserializes to default registry
-    assert "Found 1 suppressions" in result.stdout
-    assert "New suppression detected" in result.stdout
+    assert "1 suppressions need documentation" in result.stdout
+    assert "Added" in result.stdout
 
 
 def test_readonly_shamefile_shows_save_error(tmp_path):

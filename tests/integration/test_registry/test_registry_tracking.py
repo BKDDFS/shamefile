@@ -57,10 +57,13 @@ def test_new_suppression_added_while_existing_preserved(tmp_path):
     # Second run
     result = run_shamefile(tmp_path)
 
-    registry_content = registry.read_text()
     assert result.returncode == 1  # new entry has empty why
-    assert "JIRA-123" in registry_content  # old entry preserved
-    assert "# type: ignore" in result.stdout  # new suppression detected
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    noqa_entry = next(e for e in entries if e["location"] == "./test.py:1")
+    assert noqa_entry["why"] == "Legacy code, see JIRA-123"  # old entry preserved
+    type_ignore_entry = next(e for e in entries if e["location"] == "./test.py:2")
+    assert type_ignore_entry["token"] == "# type: ignore"  # noqa: S105
+    assert type_ignore_entry["why"] == ""  # new suppression, not yet documented
 
 
 def test_same_token_on_multiple_lines_tracked_independently(tmp_path):
@@ -82,9 +85,12 @@ def test_same_token_on_multiple_lines_tracked_independently(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1  # second entry still unjustified
-    registry_content = registry.read_text()
-    assert len(yaml.safe_load(registry_content)["entries"]) == noqa_count  # both still tracked
-    assert "Justified" in registry_content  # first entry preserved
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    assert len(entries) == noqa_count  # both still tracked
+    line1 = next(e for e in entries if e["location"] == "./test.py:1")
+    line2 = next(e for e in entries if e["location"] == "./test.py:2")
+    assert line1["why"] == "Justified"  # first entry preserved
+    assert line2["why"] == ""  # second still unjustified
 
 
 def test_duplicate_token_on_same_line_counted_once(tmp_path):
@@ -94,7 +100,7 @@ def test_duplicate_token_on_same_line_counted_once(tmp_path):
 
     result = run_shamefile(tmp_path)
 
-    assert "Found 1 suppressions" in result.stdout
+    assert "1 suppressions need documentation" in result.stdout
 
 
 def test_multiple_files_multiple_tokens_multiple_lines(tmp_path):
@@ -106,7 +112,7 @@ def test_multiple_files_multiple_tokens_multiple_lines(tmp_path):
 
     result = run_shamefile(tmp_path)
 
-    assert "Found 5 suppressions" in result.stdout
+    assert "5 suppressions need documentation" in result.stdout
 
     # Justify only first entry
     content = registry.read_text()

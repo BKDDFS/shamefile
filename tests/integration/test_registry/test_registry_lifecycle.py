@@ -28,7 +28,7 @@ def test_empty_why_fails(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "missing why" in result.stdout
+    assert "suppressions need documentation" in result.stdout
 
 
 def test_whitespace_only_why_is_rejected(tmp_path):
@@ -44,7 +44,7 @@ def test_whitespace_only_why_is_rejected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "missing why" in result.stdout
+    assert "suppressions need documentation" in result.stdout
 
 
 def test_whitespace_wrapped_why_is_accepted(tmp_path):
@@ -76,7 +76,7 @@ def test_newline_only_why_is_rejected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "missing why" in result.stdout
+    assert "suppressions need documentation" in result.stdout
 
 
 def test_creates_registry_when_missing(tmp_path):
@@ -102,7 +102,7 @@ def test_no_suppressions_creates_empty_registry(tmp_path):
 
     assert result.returncode == 0
     assert registry.exists()
-    assert "Found 0 suppressions" in result.stdout
+    assert "Validation passed" in result.stdout
 
 
 def test_delete_registry_and_rerun_behaves_as_first_run(tmp_path):

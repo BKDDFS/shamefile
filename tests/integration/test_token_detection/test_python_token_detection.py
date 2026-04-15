@@ -1,3 +1,4 @@
+import yaml
 from conftest import run_shamefile
 
 
@@ -9,7 +10,9 @@ def test_token_inside_docstring_is_not_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
-    assert "# noqa" not in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry.get("entries") or []
+    assert not any("noqa" in e["token"] for e in entries)
 
 
 def test_token_inside_multiline_string_is_not_detected(tmp_path):
@@ -20,7 +23,9 @@ def test_token_inside_multiline_string_is_not_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
-    assert "# noqa" not in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry.get("entries") or []
+    assert not any("noqa" in e["token"] for e in entries)
 
 
 def test_token_in_comment_next_to_string_is_detected(tmp_path):
@@ -31,7 +36,8 @@ def test_token_in_comment_next_to_string_is_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "# noqa" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any(e["token"] == "# noqa" for e in registry["entries"])  # noqa: S105
 
 
 def test_token_in_string_and_comment_same_line(tmp_path):
@@ -42,7 +48,8 @@ def test_token_in_string_and_comment_same_line(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "# noqa" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any(e["token"] == "# noqa" for e in registry["entries"])  # noqa: S105
 
 
 def test_case_insensitive_noqa_detected(tmp_path):
@@ -53,7 +60,8 @@ def test_case_insensitive_noqa_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "New suppression detected" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any("noqa" in e["token"].lower() for e in registry["entries"])
 
 
 def test_case_insensitive_nosec_detected(tmp_path):
@@ -64,7 +72,8 @@ def test_case_insensitive_nosec_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "New suppression detected" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any("nosec" in e["token"].lower() for e in registry["entries"])
 
 
 def test_case_insensitive_pragma_detected(tmp_path):
@@ -75,7 +84,8 @@ def test_case_insensitive_pragma_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "New suppression detected" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any("pragma: no cover" in e["token"].lower() for e in registry["entries"])
 
 
 def test_no_space_after_hash_nosec_detected(tmp_path):
@@ -86,7 +96,8 @@ def test_no_space_after_hash_nosec_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "New suppression detected" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any("nosec" in e["token"].lower() for e in registry["entries"])
 
 
 def test_extra_space_after_hash_nosec_detected(tmp_path):
@@ -97,4 +108,5 @@ def test_extra_space_after_hash_nosec_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "New suppression detected" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any("nosec" in e["token"].lower() for e in registry["entries"])

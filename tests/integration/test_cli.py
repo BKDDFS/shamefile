@@ -281,7 +281,7 @@ def test_rerun_with_different_path_form_preserves_justified_entries(tmp_path):
     assert len(entries) == 1
     assert entries[0]["why"] == "Justified reason"
     assert "Removing stale entry" not in result.stdout
-    assert "New suppression detected" not in result.stdout
+    assert "Added" not in result.stdout
     assert result.returncode == 0
 
 

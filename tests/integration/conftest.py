@@ -86,6 +86,28 @@ def run_shamefile(cwd, *args):
     )
 
 
+def run_shame_next(cwd):
+    """Run 'shame next' in a specific working directory."""
+    return subprocess.run(
+        [BINARY_PATH, "next"],
+        capture_output=True,
+        text=True,
+        cwd=str(cwd),
+        check=False,
+    )
+
+
+def run_shame_fix(cwd, *args):
+    """Run 'shame fix' in a specific working directory."""
+    return subprocess.run(
+        [BINARY_PATH, "fix", *args],
+        capture_output=True,
+        text=True,
+        cwd=str(cwd),
+        check=False,
+    )
+
+
 def git_init(path, user="Alice", email="alice@test.com"):
     """Initialize a git repo with user config. Returns path."""
     subprocess.run(["git", "init"], cwd=path, capture_output=True, check=True)

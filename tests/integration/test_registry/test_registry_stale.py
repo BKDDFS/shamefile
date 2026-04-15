@@ -23,7 +23,8 @@ def test_stale_entry_removed(tmp_path):
 
     assert result.returncode == 1
     assert "Removing stale entry" in result.stdout
-    assert "# noqa" not in registry.read_text()
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    assert not any("noqa" in e["token"] for e in entries)
 
 
 def test_deleted_file_entries_become_stale(tmp_path):
@@ -35,18 +36,21 @@ def test_deleted_file_entries_become_stale(tmp_path):
     registry = tmp_path / "shamefile.yaml"
 
     run_shamefile(tmp_path)
-    assert "# noqa" in registry.read_text()
-    assert "type: ignore" in registry.read_text()
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    tokens = {e["token"] for e in entries}
+    assert "# noqa" in tokens
+    assert "# type: ignore" in tokens
 
     # Delete one file
     file_a.unlink()
 
     result = run_shamefile(tmp_path)
 
-    registry_content = registry.read_text()
-    assert "# noqa" not in registry_content
-    assert "type: ignore" in registry_content
     assert "Removing stale entry" in result.stdout
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    tokens = {e["token"] for e in entries}
+    assert "# noqa" not in tokens
+    assert "# type: ignore" in tokens
 
 
 def test_gitignored_file_entries_become_stale(tmp_path):
@@ -60,14 +64,16 @@ def test_gitignored_file_entries_become_stale(tmp_path):
 
     # First run — creates entry
     run_shamefile(tmp_path)
-    assert "# noqa" in registry.read_text()
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    assert any("noqa" in e["token"] for e in entries)
     (tmp_path / ".gitignore").write_text("test.py\n")
 
     # Second run — entry should be removed as stale
     result = run_shamefile(tmp_path)
 
     assert "Removing stale entry" in result.stdout
-    assert "# noqa" not in registry.read_text()
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    assert not any("noqa" in e["token"] for e in entries)
 
 
 def test_replacing_token_removes_old_and_adds_new(tmp_path):
@@ -86,17 +92,14 @@ def test_replacing_token_removes_old_and_adds_new(tmp_path):
 
     result = run_shamefile(tmp_path)
 
-    registry_content = registry.read_text()
-    assert "# noqa" not in registry_content
-    assert "# type: ignore" in registry_content
-    assert "Legacy code" not in registry_content
     assert "Removing stale entry" in result.stdout
-    assert "New suppression detected" in result.stdout
-
-    # New entry should have empty why (forces re-justification)
-    entries = yaml.safe_load(registry_content)["entries"]
-    new_entry = next(e for e in entries if e["token"] == "# type: ignore")  # noqa: S105
-    assert new_entry["why"] == ""
+    assert "Added" in result.stdout
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    tokens = {e["token"] for e in entries}
+    assert "# noqa" not in tokens  # old token removed
+    assert "# type: ignore" in tokens  # new token added
+    assert not any(e["why"] == "Legacy code" for e in entries)  # old why gone
+    assert entries[0]["why"] == ""  # new entry forces re-justification
 
 
 def test_stale_removed_and_new_added_same_run(tmp_path):
@@ -116,12 +119,13 @@ def test_stale_removed_and_new_added_same_run(tmp_path):
 
     result = run_shamefile(tmp_path)
 
-    registry_content = registry.read_text()
-    assert "# noqa" not in registry_content
-    assert "# type: ignore" in registry_content
-    assert "nosec" in registry_content
     assert "Removing stale entry" in result.stdout
-    assert "New suppression detected" in result.stdout
+    assert "Added" in result.stdout
+    entries = yaml.safe_load(registry.read_text())["entries"]
+    tokens = {e["token"] for e in entries}
+    assert "# noqa" not in tokens
+    assert "# type: ignore" in tokens
+    assert "nosec" in tokens
 
 
 def test_multiple_stale_entries_removed_at_once(tmp_path):

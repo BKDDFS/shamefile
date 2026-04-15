@@ -1,6 +1,7 @@
 import subprocess
 
 import pytest
+import yaml
 from conftest import EXTENSION_PARAMS, LANGUAGES, TOKEN_PARAMS, run_shamefile
 
 
@@ -13,8 +14,10 @@ def test_detects_token(token, extension, tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert token in result.stdout
-    assert "New suppression detected" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    tokens = {e["token"] for e in registry["entries"]}
+    assert token.lower() in {t.lower() for t in tokens}
+    assert "Added" in result.stdout
 
 
 def test_detects_in_nested_dirs(tmp_path):
@@ -31,10 +34,12 @@ def test_detects_in_nested_dirs(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "Found 3 suppressions in code" in result.stdout
-    assert "# noqa" in result.stdout
-    assert "# type: ignore" in result.stdout
-    assert "nosec" in result.stdout
+    assert "3 suppressions need documentation" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    tokens = {e["token"] for e in registry["entries"]}
+    assert "# noqa" in tokens
+    assert "# type: ignore" in tokens
+    assert "nosec" in tokens
 
 
 def test_ignores_gitignored_files(tmp_path):
@@ -48,7 +53,8 @@ def test_ignores_gitignored_files(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
-    assert "# noqa" not in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert registry["entries"] is None or len(registry["entries"]) == 0
 
 
 def test_gitignore_not_respected_without_git_init(tmp_path):
@@ -61,7 +67,9 @@ def test_gitignore_not_respected_without_git_init(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "# noqa" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    tokens = {e["token"] for e in registry["entries"]}
+    assert "# noqa" in tokens
 
 
 def test_multiple_files_multiple_languages(tmp_path):
@@ -76,9 +84,11 @@ def test_multiple_files_multiple_languages(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert f"Found {len(expected_tokens)} suppressions" in result.stdout
+    assert f"{len(expected_tokens)} suppressions need documentation" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    found_tokens = {e["token"] for e in registry["entries"]}
     for token in expected_tokens:
-        assert token in result.stdout
+        assert token in found_tokens
 
 
 @pytest.mark.parametrize(("token", "extension"), EXTENSION_PARAMS)
@@ -90,8 +100,10 @@ def test_detects_token_in_each_extension(token, extension, tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert token in result.stdout
-    assert "New suppression detected" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    tokens = {e["token"] for e in registry["entries"]}
+    assert token in tokens
+    assert "Added" in result.stdout
 
 
 def test_python_token_in_js_file_not_detected(tmp_path):
@@ -101,7 +113,9 @@ def test_python_token_in_js_file_not_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
-    assert "# noqa" not in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry.get("entries") or []
+    assert not any("noqa" in e["token"] for e in entries)
 
 
 def test_js_token_in_py_file_not_detected(tmp_path):
@@ -111,4 +125,6 @@ def test_js_token_in_py_file_not_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
-    assert "// eslint-disable" not in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry.get("entries") or []
+    assert not any("eslint-disable" in e["token"] for e in entries)

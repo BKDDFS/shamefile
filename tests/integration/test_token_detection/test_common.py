@@ -1,3 +1,4 @@
+import yaml
 from conftest import LANGUAGES, run_shamefile
 
 PYTHON_TOKENS = LANGUAGES["Python"]["tokens"]
@@ -11,7 +12,8 @@ def test_token_with_error_code(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "# noqa" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any(e["token"] == "# noqa" for e in registry["entries"])  # noqa: S105
 
 
 def test_multiple_tokens_on_one_line(tmp_path):
@@ -23,9 +25,11 @@ def test_multiple_tokens_on_one_line(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert f"Found {len(PYTHON_TOKENS)} suppressions" in result.stdout
+    assert f"{len(PYTHON_TOKENS)} suppressions need documentation" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    found_tokens = {e["token"] for e in registry["entries"]}
     for token in PYTHON_TOKENS:
-        assert token in result.stdout
+        assert token in found_tokens
 
 
 def test_token_with_trailing_text(tmp_path):
@@ -36,7 +40,8 @@ def test_token_with_trailing_text(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "nosec" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any(e["token"] == "nosec" for e in registry["entries"])  # noqa: S105
 
 
 def test_token_inside_string_is_not_detected(tmp_path):
@@ -47,7 +52,9 @@ def test_token_inside_string_is_not_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 0
-    assert "# noqa" not in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    entries = registry.get("entries") or []
+    assert not any("noqa" in e["token"] for e in entries)
 
 
 def test_token_in_file_with_syntax_errors_is_still_detected(tmp_path):
@@ -58,7 +65,8 @@ def test_token_in_file_with_syntax_errors_is_still_detected(tmp_path):
     result = run_shamefile(tmp_path)
 
     assert result.returncode == 1
-    assert "# noqa" in result.stdout
+    registry = yaml.safe_load((tmp_path / "shamefile.yaml").read_text())
+    assert any(e["token"] == "# noqa" for e in registry["entries"])  # noqa: S105
 
 
 def test_non_code_files_not_scanned(tmp_path):

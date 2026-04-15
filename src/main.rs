@@ -115,6 +115,25 @@ enum Commands {
         #[arg(long)]
         hidden: bool,
     },
+
+    /// Show the next undocumented suppression
+    Next {
+        /// Document this entry with the given reason
+        reason: Option<String>,
+    },
+
+    /// Document a specific suppression with a reason
+    Fix {
+        /// Location (e.g. "./src/foo.py:42")
+        location: String,
+
+        /// Token (e.g. "# noqa")
+        token: String,
+
+        /// The reason for the suppression
+        #[arg(long)]
+        why: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -127,6 +146,16 @@ fn main() -> Result<()> {
             hidden,
         } => {
             handle_me(&paths, dry_run, hidden)?;
+        }
+        Commands::Next { reason } => {
+            handle_next(reason.as_deref())?;
+        }
+        Commands::Fix {
+            location,
+            token,
+            why,
+        } => {
+            handle_fix(&location, &token, &why)?;
         }
     }
     Ok(())
@@ -274,8 +303,6 @@ fn handle_normal(
         a.path == b.path && a.line_number == b.line_number && a.matched_token == b.matched_token
     });
 
-    println!("Found {} suppressions in code.", violations.len());
-
     // 3. Cascade matching: reconcile violations with existing entries
     let renames = shamefile::git::detect_renames(registry_dir);
     let matches = cascade_match(&registry.entries, &violations, &renames);
@@ -315,10 +342,6 @@ fn handle_normal(
             });
         } else {
             // New entry — no match in old registry
-            println!(
-                "New suppression detected: {} at {}:{}",
-                v.matched_token, v_path_str, v.line_number
-            );
             registry.entries.push(Entry {
                 location: new_location,
                 token: v.matched_token.clone(),
@@ -389,31 +412,22 @@ fn handle_normal(
     }
 
     if !unmatched_stale.is_empty() {
-        println!("Unmatched stale entries (algorithmic matching failed):");
+        println!("Could not match these entries to current code — please review manually:");
         for e in &unmatched_stale {
-            println!(
-                "  - {} at {} (line changed or removed)",
-                e.token, e.location
-            );
+            println!("  - {} at {}", e.token, e.location);
         }
         // Keep them in registry — user must resolve manually
         registry.entries.extend(unmatched_stale);
         errors_found = true;
     }
 
-    // 4. Validate justifications
-    let missing_why: Vec<_> = registry
+    // 4. Check for missing justifications (count before save)
+    let missing_why_count = registry
         .entries
         .iter()
         .filter(|e| e.why.trim().is_empty())
-        .collect();
-
-    if !missing_why.is_empty() {
-        for entry in &missing_why {
-            println!("missing why: {}", entry.token);
-            println!(" --> {}", entry.location);
-            println!();
-        }
+        .count();
+    if missing_why_count > 0 {
         errors_found = true;
     }
 
@@ -421,6 +435,8 @@ fn handle_normal(
     registry
         .save(config_path)
         .context("Failed to save registry")?;
+
+    // 6. Print summary
     if new_entries_count > 0 {
         println!(
             "Added {} new entries to {}",
@@ -434,17 +450,23 @@ fn handle_normal(
             removed_count,
             config_path.display()
         );
-    }
-
-    // 6. Exit 1 if registry changed or errors
-    if removed_count > 0 {
         errors_found = true;
     }
-    if errors_found {
+
+    if missing_why_count > 0 {
         println!(
-            "Validation failed! Please add reasons (why) to {}",
-            config_path.display()
+            "{} suppressions need documentation (why).",
+            missing_why_count
         );
+        println!(
+            "Run `shame next` to see the first one, or `shame next \"<reason>\"` to fill its why."
+        );
+        println!(
+            "Note for LLMs: avoid reading large shamefile.yaml! Use shamefile MCP. If not installed, run `shame mcp`."
+        );
+    }
+
+    if errors_found {
         std::process::exit(1);
     }
 
@@ -604,6 +626,141 @@ fn handle_dry_run(
     } else {
         println!("\nAll checks passed!");
     }
+
+    Ok(())
+}
+
+fn find_registry_path() -> Result<PathBuf> {
+    let cwd = std::env::current_dir().context("Failed to get current directory")?;
+    let registry_dir = shamefile::git::find_git_root(&cwd).unwrap_or_else(|| cwd.clone());
+    let config_path = registry_dir.join("shamefile.yaml");
+    if !config_path.exists() {
+        eprintln!(
+            "Registry not found at {}. Run `shame me` first to create it.",
+            config_path.display()
+        );
+        std::process::exit(1);
+    }
+    Ok(config_path)
+}
+
+fn print_entry_snippet(entry: &Entry, registry_dir: &Path) {
+    println!("{}", entry.location);
+
+    let file_path = registry_dir.join(entry.file());
+    if let Ok(source) = std::fs::read_to_string(&file_path) {
+        let line_num = entry.line() as usize;
+        if let Some(line) = source.lines().nth(line_num - 1) {
+            let trimmed = line.trim_start();
+            println!("    |");
+            println!("{:>4}| {}", line_num, trimmed);
+            if let Some(col) = trimmed.rfind(&entry.token) {
+                let underline = " ".repeat(col) + &"^".repeat(entry.token.len());
+                println!("    | {underline}");
+            }
+        }
+    }
+}
+
+fn print_remaining(remaining: usize) {
+    if remaining == 0 {
+        println!("All entries documented. No shame today!");
+    } else {
+        println!("{} entries remaining.", remaining);
+    }
+}
+
+fn handle_next(fix: Option<&str>) -> Result<()> {
+    let config_path = find_registry_path()?;
+    let mut registry = Registry::load(&config_path).context("Failed to load registry")?;
+    let registry_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
+
+    let entry_idx = registry
+        .entries
+        .iter()
+        .position(|e| e.why.trim().is_empty());
+
+    let Some(idx) = entry_idx else {
+        println!("No entries need documentation. No shame today!");
+        return Ok(());
+    };
+
+    if let Some(reason) = fix {
+        println!(
+            "Documented: {} at {}",
+            registry.entries[idx].token, registry.entries[idx].location
+        );
+        registry.entries[idx].why = reason.to_string();
+        registry
+            .save(&config_path)
+            .context("Failed to save registry")?;
+
+        let next_idx = registry
+            .entries
+            .iter()
+            .position(|e| e.why.trim().is_empty());
+
+        if let Some(next) = next_idx {
+            let remaining = registry
+                .entries
+                .iter()
+                .filter(|e| e.why.trim().is_empty())
+                .count();
+            println!("{} remaining.\n", remaining);
+            print_entry_snippet(&registry.entries[next], registry_dir);
+            println!(
+                "\nFix with:\n  shame next \"<reason>\"\n  shame fix \"{}\" \"{}\" --why \"<reason>\"",
+                registry.entries[next].location, registry.entries[next].token
+            );
+        } else {
+            print_remaining(0);
+        }
+    } else {
+        print_entry_snippet(&registry.entries[idx], registry_dir);
+        println!(
+            "\nFix with:\n  shame next \"<reason>\"\n  shame fix \"{}\" \"{}\" --why \"<reason>\"",
+            registry.entries[idx].location, registry.entries[idx].token
+        );
+        let remaining = registry
+            .entries
+            .iter()
+            .filter(|e| e.why.trim().is_empty())
+            .count();
+        if remaining > 1 {
+            println!("{} more entries need documentation.", remaining - 1);
+        }
+    }
+
+    Ok(())
+}
+
+fn handle_fix(location: &str, token: &str, why: &str) -> Result<()> {
+    let config_path = find_registry_path()?;
+    let mut registry = Registry::load(&config_path).context("Failed to load registry")?;
+
+    let entry_idx = registry
+        .entries
+        .iter()
+        .position(|e| e.location == location && e.token == token)
+        .ok_or_else(|| anyhow::anyhow!("No entry found for {} with token '{}'", location, token))?;
+
+    registry.entries[entry_idx].why = why.to_string();
+
+    println!(
+        "Documented: {} at {}",
+        registry.entries[entry_idx].token, registry.entries[entry_idx].location
+    );
+
+    registry
+        .save(&config_path)
+        .context("Failed to save registry")?;
+
+    let remaining = registry
+        .entries
+        .iter()
+        .filter(|e| e.why.trim().is_empty())
+        .count();
+    print_remaining(remaining);
 
     Ok(())
 }

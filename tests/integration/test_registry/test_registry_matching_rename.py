@@ -45,7 +45,7 @@ def test_line_shift_and_content_change_reports_unmatched(tmp_path):
     # Old entry should NOT be auto-removed
     registry = yaml.safe_load(registry_path.read_text())
     assert any(e["why"] == "Legacy code" for e in registry["entries"])
-    assert "algorithmic matching failed" in result.stdout
+    assert "please review manually" in result.stdout
     assert result.returncode == 1
 
 
@@ -160,5 +160,5 @@ def test_file_rename_plus_content_change_reports_unmatched(tmp_path):
     # Old entry should NOT be auto-removed
     registry = yaml.safe_load(registry_path.read_text())
     assert any(e["why"] == "Legacy code" for e in registry["entries"])
-    assert "algorithmic matching failed" in result.stdout
+    assert "please review manually" in result.stdout
     assert result.returncode == 1
