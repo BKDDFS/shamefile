@@ -11,3 +11,6 @@ TASK.md
 __pycache__/
 *.pyc
 uv.lock
+
+# Node (prettier pre-commit hook)
+node_modules/
