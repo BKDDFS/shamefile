@@ -22,6 +22,14 @@ dev = [
     "ruff>=0.15",
 ]
 
+[tool.pytest.ini_options]
+markers = [
+    "xfail: expected failure (mapped from @xfail tag in .feature files)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning:gherkin.*",
+]
+
 [tool.ruff]
 target-version = "py314"
 line-length = 100
