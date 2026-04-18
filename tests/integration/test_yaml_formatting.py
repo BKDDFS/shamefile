@@ -1,6 +1,9 @@
 """BDD tests for YAML formatting — feature file: features/yaml_formatting_docstring.feature."""
 
+import shutil
 import subprocess
+import sys
+from pathlib import Path
 
 import yaml
 from conftest import BINARY_PATH, run_shamefile
@@ -25,12 +28,28 @@ def project_with_suppression(tmp_path):
     target_fixture="project",
 )
 def project_with_manual_edit(tmp_path, docstring):
-    """Create project, then replace why: '' with the docstring content."""
+    """Simulate a user manually editing shamefile.yaml with the gherkin docstring.
+
+    The gherkin docstring has its leading whitespace stripped by pytest-bdd, so
+    multiline values like `why: |` + continuation lines land at column 0. To make
+    them valid YAML under the file's actual indentation (where `why:` sits at the
+    column chosen by our `indent_sequences` transform), this function re-indents
+    every line of the docstring by the file's `why:` indent before substituting.
+    """
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
     run_shamefile(tmp_path)
     registry = tmp_path / "shamefile.yaml"
     content = registry.read_text()
-    registry.write_text(content.replace("why: ''", docstring.strip()))
+    # Find the indent prefix of the `why: ''` line in the file
+    indent = next(
+        line[: len(line) - len(line.lstrip())]
+        for line in content.splitlines()
+        if line.lstrip().startswith("why: ''")
+    )
+    # Re-indent each line of the gherkin docstring to match the file's indent,
+    # so `|` block continuations land at col > key indent (YAML requirement).
+    replacement = "\n".join(indent + ln for ln in docstring.strip().splitlines())
+    registry.write_text(content.replace(indent + "why: ''", replacement))
     return {"path": tmp_path, "result": None}
 
 
@@ -77,6 +96,19 @@ def check_exit_code(project, code):
     assert project["result"].returncode == code
 
 
+@then("shamefile.yaml passes yamllint with default config")
+def check_yamllint(project):
+    """Verify generated YAML passes yamllint defaults."""
+    yamllint = shutil.which("yamllint") or str(Path(sys.executable).parent / "yamllint")
+    result = subprocess.run(
+        [yamllint, "-d", "default", str(project["path"] / "shamefile.yaml")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, f"yamllint failed:\n{result.stdout}"
+
+
 @then("no line in shamefile.yaml exceeds 80 characters")
 def check_max_line_length(project):
     """Verify yamllint-friendly line length."""
@@ -86,15 +118,3 @@ def check_max_line_length(project):
         assert len(line) <= max_line_length, (
             f"Line exceeds {max_line_length} chars ({len(line)}): {line}"
         )
-
-
-@then("shamefile.yaml passes yamllint with default config")
-def check_yamllint(project):
-    """Verify generated YAML passes yamllint defaults."""
-    result = subprocess.run(
-        ["yamllint", "-d", "default", str(project["path"] / "shamefile.yaml")],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 0, f"yamllint failed:\n{result.stdout}"

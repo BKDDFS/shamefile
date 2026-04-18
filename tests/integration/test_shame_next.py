@@ -1,6 +1,5 @@
 import subprocess
 
-import pytest
 import yaml
 from conftest import BINARY_PATH, run_shame_next, run_shamefile
 
@@ -204,7 +203,6 @@ def test_next_with_reason_advances_queue(tmp_path):
 # double quotes, percent) live in tests/integration/test_yaml_formatting.py (BDD).
 
 
-@pytest.mark.xfail(reason="Not yet implemented: reject empty reason")
 def test_next_rejects_empty_reason(tmp_path):
     """Shame next with empty string should fail, not write empty why."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")
@@ -223,7 +221,6 @@ def test_next_rejects_empty_reason(tmp_path):
     assert entry["why"] == ""
 
 
-@pytest.mark.xfail(reason="Not yet implemented: reject whitespace-only reason")
 def test_next_rejects_whitespace_only_reason(tmp_path):
     """Shame next with whitespace-only reason should fail."""
     (tmp_path / "test.py").write_text("x = 1  # noqa\n")

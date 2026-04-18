@@ -52,7 +52,6 @@ Feature: YAML formatting of why field
       why: 'TODO: remove after v2.0 release # tracked in sprint 42'
       """
 
-  @xfail
   Scenario: Reason with URL longer than 80 chars is folded
     Given a project with one suppression
     When I run shame next with reason:
@@ -155,8 +154,7 @@ Feature: YAML formatting of why field
       why: '42'
       """
 
-  @xfail
-  Scenario: Long reason should fold to >- so no line exceeds 80 characters
+  Scenario: Long reason is folded to >- so no line exceeds 80 characters
     Given a project with one suppression
     When I run shame next with reason:
       """
@@ -166,15 +164,14 @@ Feature: YAML formatting of why field
     And shamefile.yaml contains entry with:
       """
       why: >-
-        Decorator returns HttpRequest (Django base), not HttpReq which declares
-        auth UserMetadata. Mypy does not see authorize on the base type. This is
-        a known issue since Django 4.0 and it cannot be fixed without coupling the
-        generic decorator to a domain-specific subclass which entirely breaks the
-        reusability.
+            Decorator returns HttpRequest (Django base), not HttpReq which declares
+            auth UserMetadata. Mypy does not see authorize on the base type. This is a
+            known issue since Django 4.0 and it cannot be fixed without coupling the
+            generic decorator to a domain-specific subclass which entirely breaks the
+            reusability.
       """
 
-  @xfail
-  Scenario: Long reason with special chars should fold and round-trip
+  Scenario: Long reason with special chars is folded and round-trips
     Given a project with one suppression
     When I run shame next with reason:
       """
@@ -184,11 +181,11 @@ Feature: YAML formatting of why field
     And shamefile.yaml contains entry with:
       """
       why: >-
-        Decorator returns HttpRequest (Django base), not HttpReq which declares
-        auth: UserMetadata. Mypy doesn't see .authorize() on the base type. #
-        This is a known issue since Django 4.0. Can't use narrowing here because
-        it would couple the generic decorator to a domain-specific subclass and
-        break the reusability pattern we've established.
+            Decorator returns HttpRequest (Django base), not HttpReq which declares
+            auth: UserMetadata. Mypy doesn't see .authorize() on the base type. # This
+            is a known issue since Django 4.0. Can't use narrowing here because it
+            would couple the generic decorator to a domain-specific subclass and break
+            the reusability pattern we've established.
       """
 
   # --- Via manual edit ---
@@ -215,8 +212,7 @@ Feature: YAML formatting of why field
       why: 'reason: important context'
       """
 
-  @xfail
-  Scenario: Manual edit with hash should preserve full value
+  Scenario: Manual edit with hash preserves full value
     Given a project with one suppression and manual edit:
       """
       why: see # TODO
@@ -272,15 +268,17 @@ Feature: YAML formatting of why field
       why: '42'
       """
 
-  Scenario: Manual edit with malformed plain scalar (colon) causes parse error
+  Scenario: Manual edit with unquoted colon is normalized to single-quoted string
     Given a project with one suppression and manual edit:
       """
       why: reason: important
       """
     When I run shame me
-    Then shame me exits with code 1
+    Then shamefile.yaml contains entry with:
+      """
+      why: 'reason: important'
+      """
 
-  @xfail
   Scenario: Manual edit with literal block scalar | is normalized to single-line
     Given a project with one suppression and manual edit:
       """
@@ -307,7 +305,6 @@ Feature: YAML formatting of why field
       why: 'This is a long explanation spanning multiple lines'
       """
 
-  @xfail
   Scenario: Long manual-edited reason with escaped apostrophes is folded
     Given a project with one suppression and manual edit:
       """
@@ -319,12 +316,11 @@ Feature: YAML formatting of why field
     And shamefile.yaml contains entry with:
       """
       why: >-
-        Decorator returns HttpRequest (Django base), not HttpReq which declares
-        auth: UserMetadata. Mypy does not see .authorize() on the base type. #
-        This is a known issue since Django 4.0. Can't use 'narrowing' here
-        because it would couple the generic decorator to a domain-specific
-        subclass and break the reusability pattern we established in the auth
-        module.
+            Decorator returns HttpRequest (Django base), not HttpReq which declares
+            auth: UserMetadata. Mypy does not see .authorize() on the base type. #
+            This is a known issue since Django 4.0. Can't use 'narrowing' here because
+            it would couple the generic decorator to a domain-specific subclass and
+            break the reusability pattern we established in the auth module.
       """
 
   Scenario: Manual edit with literal block scalar | containing colon is normalized
@@ -387,7 +383,6 @@ Feature: YAML formatting of why field
       why: 'true'
       """
 
-  @xfail
   Scenario: Manual edit with 300-character literal block scalar is folded
     Given a project with one suppression and manual edit:
       """
@@ -399,11 +394,11 @@ Feature: YAML formatting of why field
     And shamefile.yaml contains entry with:
       """
       why: >-
-        Decorator returns HttpRequest (Django base), not HttpReq which declares
-        auth UserMetadata. Mypy does not see authorize on the base type. This is
-        a known issue since Django 4.0 and it cannot be fixed without coupling the
-        generic decorator to a domain-specific subclass which entirely breaks the
-        reusability.
+            Decorator returns HttpRequest (Django base), not HttpReq which declares
+            auth UserMetadata. Mypy does not see authorize on the base type. This is a
+            known issue since Django 4.0 and it cannot be fixed without coupling the
+            generic decorator to a domain-specific subclass which entirely breaks the
+            reusability.
       """
 
   Scenario: Manual edit with folded block scalar preserves internal multi-spaces
@@ -545,7 +540,6 @@ Feature: YAML formatting of why field
       why: '42'
       """
 
-  @xfail
   Scenario: Manual edit with double-quoted escape sequence is normalized to single-line
     Given a project with one suppression and manual edit:
       """
@@ -579,7 +573,6 @@ Feature: YAML formatting of why field
       why: 'trailing spaces  '
       """
 
-  @xfail
   Scenario: Generated shamefile.yaml passes yamllint with default config
     Given a project with one suppression and manual edit:
       """
@@ -591,7 +584,6 @@ Feature: YAML formatting of why field
     And shamefile.yaml contains entry with:
       """
       why: >-
-        Decorator returns HttpRequest (Django base), not HttpReq which declares
-        auth UserMetadata. Mypy does not see authorize on the base type.
+            Decorator returns HttpRequest (Django base), not HttpReq which declares
+            auth UserMetadata. Mypy does not see authorize on the base type.
       """
-

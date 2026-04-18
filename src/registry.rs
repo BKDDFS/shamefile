@@ -127,6 +127,9 @@ impl Registry {
 
     pub fn load(path: &Path) -> Result<Self, ShamefileError> {
         let content = fs::read_to_string(path).map_err(ShamefileError::RegistryReadError)?;
+        // Pre-process: quote unquoted plain-scalar why values so YAML parser
+        // doesn't eat comments (`# TODO`), interpret keywords, etc.
+        let content = quote_unquoted_why_values(&content);
         let registry: Registry = serde_yaml::from_str(&content)?;
 
         let entry_lines = extract_entry_start_lines(&content);
@@ -165,6 +168,13 @@ impl Registry {
     }
 
     pub fn save(&mut self, path: &Path) -> Result<(), ShamefileError> {
+        // Normalize why: replace newlines with spaces, collapse consecutive whitespace runs
+        // that crossed newlines, and trim. Preserves intentional multi-spaces within a line.
+        for entry in self.entries.iter_mut() {
+            if entry.why.contains('\n') {
+                entry.why = entry.why.replace('\n', " ").trim().to_string();
+            }
+        }
         self.entries.sort_by(|a, b| {
             a.file()
                 .cmp(b.file())
@@ -174,27 +184,132 @@ impl Registry {
         let content = serde_yaml::to_string(self)?;
         // Add blank line between entries for readability
         let content = content.replace("\n- location:", "\n\n- location:");
-        // Force-quote why values that serde_yaml left unquoted
+        // Indent sequences first (yamllint default: indent-sequences: true).
+        // After this, why: is at column 4 (under `  - location:` at column 2).
+        let content = indent_sequences(&content);
+        // Normalize why: force-quote unquoted values, fold long lines to >-.
+        // Runs after indent_sequences so fold content indentation is correct.
         let content = content
             .lines()
-            .map(|line| {
-                if let Some(value) = line.strip_prefix("  why: ") {
-                    if value.starts_with('\'')
-                        || value.starts_with('"')
-                        || value.starts_with('|')
-                        || value.starts_with('>')
-                    {
-                        line.to_string()
-                    } else {
-                        format!("  why: '{}'", value.replace('\'', "''"))
-                    }
-                } else {
-                    line.to_string()
-                }
-            })
+            .flat_map(normalize_why_line)
             .collect::<Vec<_>>()
             .join("\n");
+        // Add yamllint-friendly document start marker and trailing newline
+        let content = format!("---\n{}\n", content.trim_end());
         fs::write(path, content).map_err(ShamefileError::RegistryWriteError)?;
         Ok(())
     }
+}
+
+const MAX_LINE_LENGTH: usize = 80;
+
+/// Indent sequence entries (yamllint `indent-sequences: true` default).
+/// Shifts every non-empty line after `entries:` right by 2 spaces.
+fn indent_sequences(content: &str) -> String {
+    let mut in_entries = false;
+    content
+        .lines()
+        .map(|line| {
+            if line == "entries:" || line.starts_with("entries:") {
+                in_entries = true;
+                line.to_string()
+            } else if in_entries && !line.is_empty() {
+                format!("  {line}")
+            } else {
+                line.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Strip the `why: ` prefix at any indentation level. Returns (indent, value).
+fn strip_why_prefix(line: &str) -> Option<(&str, &str)> {
+    let trimmed = line.trim_start();
+    let rest = trimmed.strip_prefix("why: ")?;
+    let indent_len = line.len() - trimmed.len();
+    Some((&line[..indent_len], rest))
+}
+
+/// Pre-process raw YAML before parsing: quote unquoted plain-scalar `why:` values.
+/// This prevents YAML from eating `# TODO` as a comment and from misinterpreting
+/// ambiguous values. Leaves already-quoted, block-scalar, and null-like values alone.
+fn quote_unquoted_why_values(content: &str) -> String {
+    content
+        .lines()
+        .map(|line| {
+            let Some((indent, rest)) = strip_why_prefix(line) else {
+                return line.to_string();
+            };
+            let value = rest.trim_end();
+            if value.is_empty()
+                || value.starts_with('\'')
+                || value.starts_with('"')
+                || value.starts_with('|')
+                || value.starts_with('>')
+                || value.starts_with('!')  // YAML type tag like !!str
+                || value == "null"
+                || value == "~"
+                || value == "Null"
+                || value == "NULL"
+            {
+                return line.to_string();
+            }
+            format!("{indent}why: '{}'", value.replace('\'', "''"))
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// Normalize a single `why:` line: force-quote unquoted values, fold if too long.
+/// Returns one or more output lines (multiple when folded to `>-` block).
+fn normalize_why_line(line: &str) -> Vec<String> {
+    let Some((indent, value)) = strip_why_prefix(line) else {
+        return vec![line.to_string()];
+    };
+
+    let quoted_line = if value.starts_with('\'')
+        || value.starts_with('"')
+        || value.starts_with('|')
+        || value.starts_with('>')
+    {
+        line.to_string()
+    } else {
+        format!("{indent}why: '{}'", value.replace('\'', "''"))
+    };
+
+    if quoted_line.len() <= MAX_LINE_LENGTH {
+        return vec![quoted_line];
+    }
+
+    // Fold to `>-` block. Extract the raw value (stripping single quotes + unescape).
+    let value_part = quoted_line
+        .strip_prefix(indent)
+        .and_then(|s| s.strip_prefix("why: "))
+        .unwrap_or(&quoted_line);
+    let raw_value = if value_part.starts_with('\'') && value_part.ends_with('\'') {
+        value_part[1..value_part.len() - 1].replace("''", "'")
+    } else {
+        value_part.to_string()
+    };
+
+    let mut out = vec![format!("{indent}why: >-")];
+    let fold_indent = format!("{indent}  ");
+    let max_content_len = MAX_LINE_LENGTH - fold_indent.len();
+    let mut current = String::new();
+    for word in raw_value.split(' ') {
+        if current.is_empty() {
+            current.push_str(word);
+        } else if current.len() + 1 + word.len() <= max_content_len {
+            current.push(' ');
+            current.push_str(word);
+        } else {
+            out.push(format!("{fold_indent}{current}"));
+            current = word.to_string();
+        }
+    }
+    if !current.is_empty() {
+        out.push(format!("{fold_indent}{current}"));
+    }
+    out
 }

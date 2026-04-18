@@ -671,6 +671,14 @@ fn print_remaining(remaining: usize) {
 }
 
 fn handle_next(fix: Option<&str>) -> Result<()> {
+    // Validate reason: must be non-empty and not just whitespace
+    if let Some(reason) = fix
+        && reason.trim().is_empty()
+    {
+        eprintln!("Error: reason cannot be empty or whitespace-only.");
+        std::process::exit(1);
+    }
+
     let config_path = find_registry_path()?;
     let mut registry = Registry::load(&config_path).context("Failed to load registry")?;
     let registry_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
@@ -735,6 +743,11 @@ fn handle_next(fix: Option<&str>) -> Result<()> {
 }
 
 fn handle_fix(location: &str, token: &str, why: &str) -> Result<()> {
+    if why.trim().is_empty() {
+        eprintln!("Error: --why cannot be empty or whitespace-only.");
+        std::process::exit(1);
+    }
+
     let config_path = find_registry_path()?;
     let mut registry = Registry::load(&config_path).context("Failed to load registry")?;
 
