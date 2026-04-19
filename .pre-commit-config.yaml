@@ -24,6 +24,13 @@ repos:
         language: system
         pass_filenames: false
         types: [rust]
+      - id: pytest
+        name: pytest (integration)
+        entry: bash -c 'cargo build && uv run pytest tests/'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.10
     hooks:
@@ -33,12 +40,7 @@ repos:
     rev: v5.0.0
     hooks:
       - id: check-yaml
-  - repo: https://github.com/adrienverge/yamllint
-    rev: v1.37.1
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.7.12
     hooks:
-      - id: yamllint
-  - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v4.0.0-alpha.8
-    hooks:
-      - id: prettier
-        types: [yaml]
+      - id: actionlint

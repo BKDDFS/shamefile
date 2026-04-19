@@ -587,3 +587,11 @@ Feature: YAML formatting of why field
             Decorator returns HttpRequest (Django base), not HttpReq which declares
             auth UserMetadata. Mypy does not see authorize on the base type.
       """
+
+  Scenario: Generated shamefile.yaml passes prettier with default config
+    Given a project with one suppression and manual edit:
+      """
+      why: 'Decorator returns HttpRequest (Django base), not HttpReq which declares auth UserMetadata. Mypy does not see authorize on the base type.'
+      """
+    When I run shame me
+    Then shamefile.yaml passes prettier with default config

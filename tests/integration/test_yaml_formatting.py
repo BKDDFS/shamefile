@@ -109,6 +109,20 @@ def check_yamllint(project):
     assert result.returncode == 0, f"yamllint failed:\n{result.stdout}"
 
 
+@then("shamefile.yaml passes prettier with default config")
+def check_prettier(project):
+    """Verify generated YAML passes prettier defaults."""
+    prettier = shutil.which("prettier")
+    assert prettier, "prettier not found on PATH (install via `npm install -g prettier`)"
+    result = subprocess.run(
+        [prettier, "--check", str(project["path"] / "shamefile.yaml")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, f"prettier failed:\n{result.stdout}\n{result.stderr}"
+
+
 @then("no line in shamefile.yaml exceeds 80 characters")
 def check_max_line_length(project):
     """Verify yamllint-friendly line length."""
