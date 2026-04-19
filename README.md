@@ -2,129 +2,83 @@
   <img src="assets/logo.png" alt="shamefile logo" width="300">
 </h1>
 
-<p align="center">
-  <a href="https://github.com/BKDDFS/shame-file"><img src="https://img.shields.io/github/created-at/BKDDFS/shame-file?style=flat-square&color=b81414" alt="Created"></a>
-  <a href="https://github.com/BKDDFS/shame-file/commits/main"><img src="https://img.shields.io/github/last-commit/BKDDFS/shame-file?style=flat-square&color=b81414" alt="Last Commit"></a>
-  <a href="https://codecov.io/gh/BKDDFS/shame-file"><img src="https://img.shields.io/codecov/c/github/BKDDFS/shame-file?style=flat-square&color=b81414" alt="Coverage"></a>
-  <a href="https://github.com/BKDDFS/shame-file/blob/main/LICENSE"><img src="https://img.shields.io/github/license/BKDDFS/shame-file?style=flat-square&color=b81414" alt="License"></a>
-  <a href="https://github.com/BKDDFS/shame-file/releases/latest"><img src="https://img.shields.io/github/v/release/BKDDFS/shame-file?style=flat-square&color=b81414" alt="Latest Release"></a>
-  <a href="https://www.rust-lang.org/"><img src="https://img.shields.io/badge/powered_by-Rust-b81414?style=flat-square&logo=rust&logoColor=white" alt="Rust"></a>
-</p>
+[![Tests](https://github.com/BKDDFS/shamefile/actions/workflows/test.yml/badge.svg)](https://github.com/BKDDFS/shamefile/actions/workflows/test.yml)
+[![Lint](https://github.com/BKDDFS/shamefile/actions/workflows/lint.yml/badge.svg)](https://github.com/BKDDFS/shamefile/actions/workflows/lint.yml)
+[![CodeQL](https://github.com/BKDDFS/shamefile/actions/workflows/codeql.yml/badge.svg)](https://github.com/BKDDFS/shamefile/actions/workflows/codeql.yml)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=BKDDFS_shamefile&metric=coverage)](https://sonarcloud.io/summary/new_code?id=BKDDFS_shamefile)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=BKDDFS_shamefile&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=BKDDFS_shamefile)
+[![Docs](https://img.shields.io/badge/docs-blue)](https://bkddfs.github.io/shamefile/)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Rust](https://img.shields.io/badge/powered_by-Rust-b81414?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 
-<p align="center">
-  <b>Supported Languages:</b>&nbsp;&nbsp;
-  <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript">
-</p>
+> Turn linter suppressions from silent technical debt into reviewable, documented decisions.
 
-<div align="center">
+**shamefile** is a CLI that scans your codebase for linter suppressions (`# noqa`, `// eslint-disable`, `// @ts-ignore`, and many more), consolidates them into a single registry, and fails the build until every one of them carries a written justification. Human authors and AI coding agents operate through the same interface.
 
-`# pylint: disable` · `# NOSONAR` · `/* eslint-disable */` · `// ReSharper disable` · `// NOLINT`
+## Why shamefile
 
-**No matter what language you use. No matter what linter you have.**
+A mysterious `# noqa` with no explanation, left by a developer who moved on years ago. Nobody remembers why. Nobody wants to touch it. This is how legacy code accumulates — silently, one linter suppression at a time.
 
-### IT SHOULD BE F*ING DOCUMENTED!
-
-You **will** use this tool. ...or we **will** find you. :)<br>
-Hunters guild: <img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/BKDDFS/shame-file">
-
-</div>
-
-## What is this?
-
-**shamefile** is a CLI tool that scans your codebase for linter suppressions (like `// nolint`, `// eslint-disable`, `@SuppressWarnings`, and many more) and forces developers to document **why** each one exists.
-
-Every suppression gets tracked in a central `shamefile.yaml` registry. No explanation? No merge.
-
-## Motivation
-
-We've all been there. A mysterious `// nolint` with no explanation, left by someone who quit two years ago. Nobody knows why. Nobody wants to touch it. This is how legacy code is born — silently, one `// eslint-disable` at a time.
-
-**shamefile** breaks this cycle. Every suppression gets tracked in a single `shamefile.yaml` — a dedicated file with one purpose. When it changes in a PR, a reviewer understands it in seconds. Idiot-proof by design. And in the age of AI agents that love to slap `// nolint` on anything in their way — it acts as a muzzle. Human or machine, you justify it or it doesn't ship.
+`shamefile` interrupts that pattern. Every suppression is tracked in a single `shamefile.yaml` — one file, one purpose. When it changes in a pull request, a reviewer sees the full cost of a shortcut in a single diff. And as AI coding agents become routine PR authors, the registry acts as a consistent gate: whether a suppression was introduced by a human or a model, it ships with a written justification or it doesn't ship at all.
 
 ## How it works
 
-Run one command:
+`shamefile` exposes two stages, one command each.
 
-```bash
-shame me .
-```
+**Scan** — `shame me .` walks your project, finds every suppression token, and syncs the central `shamefile.yaml`. New suppressions are registered with auto-filled metadata (owner from `git blame`, timestamp, source line). Stale entries are removed. The command fails if any entry lacks a `why`.
 
-<p align="center">
-  <img src="assets/screenshot.png" alt="shame me output" width="600">
-</p>
+**Document** — `shame next` shows the first undocumented suppression, with the exact source line highlighted. Provide the reason inline (`shame next "<reason>"`), or target a specific entry with `shame fix <location> <token> --why "<reason>"`.
 
-That's it. Everything else is automatic — `shame me` scans your project for suppression tokens, adds new ones to the registry, removes stale entries that no longer exist in code, and fills in the author and timestamp. The only thing **you** have to do is **explain yourself** — fill in the `why` field:
-
-```yaml
-entries:
-  - file: src/parser.rs
-    line: 42
-    token: "// eslint-disable"
-    author: "Jan Kowalski <jan@example.com>"
-    created_at: "2025-06-01T12:00:00Z"
-    why: ""   # ← fill this in or shame won't let you merge
-```
-
-| Flag | Description |
-|------|-------------|
-| `--dry-run` (`-n`) | Read-only validation for CI/CD — never writes to disk |
-
-## End-to-End Lifecycle
-
-This tool is designed to prevent "silent technical debt" from entering your repository. Here is the theoretical E2E lifecycle of a code suppression:
-
-1. **The Shortcut**: A developer writes code and encounters a linter error they can't immediately fix (e.g., a TypeScript error due to a legacy API). They add a suppression token like `// @ts-ignore`.
-2. **The Catch (Local or Pre-commit)**: Before committing, the developer runs `shame me .` (or a git hook runs it). The tool scans the code, finds the new suppression, and adds it to the central `shamefile.yaml`. However, it throws a validation error because the developer hasn't justified the suppression yet (the `why` field is empty).
-3. **The Justification ("Shame")**: The developer must open the `shamefile.yaml` and manually write a human-readable reason in the `why: ""` field, explaining exactly *why* this suppression is necessary.
-4. **The CI/CD Gate**: The developer commits both the code and the updated `shamefile.yaml` and opens a Pull Request. On the CI server, `shame me . --dry-run` is executed. It validates that:
-   - **Coverage**: Every suppression in the code is registered in the yaml.
-   - **Staleness**: There are no "orphan" suppressions in the yaml that were already removed from the code.
-   - **Justifications**: Every registered suppression has a documented reason.
-5. **The Code Review**: Reviewers no longer have to hunt for mysterious `// nolint` comments scattered across dozens of files. All new technical debt is consolidated in a single diff against `shamefile.yaml`. They can easily see the requested shortcut and read the plain-text justification, drastically lowering the cognitive threshold to challenge, discuss, or reject it.
-   
-If everything matches and reviewers agree with the justifications, the pipeline passes, and the code merges. Technical debt is now isolated, visible, and explicitly justified.
+The same interface works for a developer opening a PR and for an AI agent iterating through gaps one at a time — without having to read the full registry into context.
 
 ## Workflow
 
-**1. You add a suppression to your code:**
+**1. Developer writes code with a suppression:**
 
 ```python
-result = parse(raw_input)  # noqa: E501
+result = parse_legacy_api(raw)  # type: ignore
 ```
 
-**2. You run `shame me` (or it runs as a pre-commit hook):**
+**2. Pre-commit (or manual) run surfaces the gap:**
 
-```bash
+```
 $ shame me .
-
-New suppression detected: # noqa at src/parser.py:42
-Missing reason (why): # noqa at src/parser.py:42
-
-Validation failed! Please add reasons (why) to shamefile.yaml
+Scanning . for suppressions...
+Added 1 new entries to shamefile.yaml
+1 suppressions need documentation (why).
+Run `shame next` to see the first one, or `shame next "<reason>"` to fill its why.
 ```
 
-**3. You open `shamefile.yaml` and fill in the `why`:**
+**3. Developer documents it — one entry at a time:**
 
-```yaml
-entries:
-  - file: src/parser.py
-    line: 42
-    token: "# noqa"
-    author: "Jan Kowalski <jan@example.com>"
-    created_at: "2025-06-01T12:00:00Z"
-    why: "Raw input line can exceed 120 chars — truncating would break parsing"
+```
+$ shame next
+./src/api.py:42
+    |
+  42| result = parse_legacy_api(raw)  # type: ignore
+
+Fix with:
+  shame next "<reason>"
+  shame fix "./src/api.py:42" "# type: ignore" --why "<reason>"
+
+$ shame next "legacy API returns untyped dict; types module in progress"
+Documented: # type: ignore at ./src/api.py:42
+All entries documented. No shame today!
 ```
 
-**4. You commit both files. Now it passes:**
+**4. Developer commits both `api.py` and `shamefile.yaml`.** The shortcut and its justification land in the same PR, reviewable in a single diff.
 
-```bash
-$ shame me .
+## CI/CD integration
 
-Validation passed. No shame today!
-```
+On the CI side, `shame me . --dry-run` is read-only and deterministic. It validates three contracts:
 
-In CI, use `--dry-run` to validate without modifying the registry:
+| Check | Meaning |
+|---|---|
+| Coverage | Every suppression in code is registered in `shamefile.yaml` |
+| Staleness | Every registered entry still points at a live suppression in code |
+| Justification | Every entry has a non-empty `why` |
+
+A failure on any of the three exits non-zero.
 
 ```yaml
 # .github/workflows/ci.yml
@@ -132,52 +86,92 @@ In CI, use `--dry-run` to validate without modifying the registry:
   run: shame me . --dry-run
 ```
 
+| Flag | Description |
+|---|---|
+| `--dry-run` (`-n`) | Read-only validation for CI/CD — never writes to disk |
+| `--hidden` | Also scan hidden files and directories (dotfiles) |
+
+## Registry format
+
+`shamefile.yaml` lives at the project root (git root if available, otherwise the working directory). Every entry is human-readable and stable under `git diff`:
+
+```yaml
+---
+config: {}
+entries:
+
+- location: ./src/api.py:42
+  token: '# type: ignore'
+  content: 'result = parse_legacy_api(raw)  # type: ignore'
+  created_at: 2026-04-17T21:15:05Z
+  owner: Anna Nowak <anna@example.com>
+  why: 'legacy API returns untyped dict; types module in progress'
+```
+
+- `location` and `token` form the entry's identity.
+- `content` is the verbatim source line — used for reconciliation when code moves.
+- `owner` and `created_at` are populated automatically on first run via `git blame`.
+- `why` is the only field you fill in by hand.
+
+## Cascade matching
+
+A registry that breaks every time you refactor is worse than no registry. `shamefile` reconciles entries against source code in two passes:
+
+1. **Location match** — exact `file:line` + token.
+2. **Content match** — same source line + token (handles line shifts, with rename detection via `git`).
+
+Renaming a file, reformatting a function, or inserting imports above a suppression all preserve the entry — `owner`, `created_at`, and `why` stay intact. Entries are only removed when the token itself is gone from the code.
+
+## Supported tokens
+
+| Token | Tool | Language |
+|---|---|---|
+| `# noqa` | Flake8 / Ruff | Python |
+| `# pylint: disable` | Pylint | Python |
+| `# type: ignore` | Mypy | Python |
+| `# pyright: ignore` | Pyright | Python |
+| `# pytype: disable` | Pytype | Python |
+| `# pyre-ignore` / `# pyre-fixme` | Pyre | Python |
+| `nosec` | Bandit | Python |
+| `# pragma: no cover` | Coverage.py | Python |
+| `# fmt: off` / `# fmt: skip` | Black / Ruff | Python |
+| `# isort: skip` | isort | Python |
+| `# lint-fixme` / `# lint-ignore` | Fixit | Python |
+| `# autopep8: off` | autopep8 | Python |
+| `// eslint-disable`, `/* eslint-disable` | ESLint | JS / TS / TSX |
+| `// tslint:disable`, `/* tslint:disable` | TSLint | TS / TSX |
+| `// @ts-ignore`, `/* @ts-ignore` | TypeScript | JS / TS / TSX |
+| `// @ts-expect-error`, `/* @ts-expect-error` | TypeScript | JS / TS / TSX |
+
+Supported file extensions: `.py`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`.
+
 ## Installation
 
+Install from source with Cargo:
+
 ```bash
-curl -fsSL https://raw.githubusercontent.com/BKDDFS/shame-file/main/install.sh | bash
+cargo install --git https://github.com/BKDDFS/shamefile
 ```
 
 Or as a [pre-commit](https://pre-commit.com) hook:
 
 ```yaml
 # .pre-commit-config.yaml
-- repo: https://github.com/BKDDFS/shame-file
-  rev: v0.1.0
+- repo: https://github.com/BKDDFS/shamefile
+  rev: main
   hooks:
     - id: shamefile
 ```
 
+Prebuilt binaries and a `curl | bash` installer are on the roadmap.
 
+## Roadmap
 
-## Supported tokens
-
-| Token | Tool | Language |
-|-------|------|----------|
-| `NOSONAR` | SonarQube / SonarCloud | Any |
-| `nosemgrep` | Semgrep | Any |
-| `# noqa` | Flake8 / Ruff | Python |
-| `# pylint: disable` | Pylint | Python |
-| `# type: ignore` | Mypy | Python |
-| `# pyright: ignore` | Pyright | Python |
-| `# pytype: disable` | Pytype | Python |
-| `# pyre-ignore` | Pyre | Python |
-| `# pyre-fixme` | Pyre | Python |
-| `# nosec` | Bandit | Python |
-| `# pragma: no cover` | Coverage.py | Python |
-| `# fmt: off` | Black / Ruff | Python |
-| `# fmt: skip` | Black / Ruff | Python |
-| `# isort: skip` | isort | Python |
-| `# lint-fixme` | Fixit | Python |
-| `# lint-ignore` | Fixit | Python |
-| `# autopep8: off` | autopep8 | Python |
-| `#[allow(` | Clippy / rustc | Rust |
-| `#[rustfmt::skip]` | rustfmt | Rust |
-| `// eslint-disable` | ESLint | JavaScript |
-| `// tslint:disable` | TSLint | JavaScript |
-| `// @ts-ignore` | TypeScript | TypeScript |
-| `// @ts-expect-error` | TypeScript | TypeScript |
+- **MCP server** — native integration for LLM-based PR authors (avoids loading the full registry into agent context)
+- **Custom git merge driver** — auto-resolve `shamefile.yaml` conflicts on parallel PRs
+- **Additional language grammars** — Rust, Go, Java, Kotlin, C# via tree-sitter
+- **Custom entry fields** — attach `ticket`, `reviewer`, or `deadline` metadata to suppressions
 
 ## Contributing
 
-**Missing a token for your linter?** [Open an issue](https://github.com/BKDDFS/shame-file/issues) first — let's agree on scope before you write code.
+**Missing a token for your linter?** [Open an issue](https://github.com/BKDDFS/shamefile/issues) first — let's agree on scope before you write code.
