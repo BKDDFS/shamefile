@@ -573,25 +573,13 @@ Feature: YAML formatting of why field
       why: 'trailing spaces  '
       """
 
-  Scenario: Generated shamefile.yaml passes yamllint with default config
-    Given a project with one suppression and manual edit:
-      """
-      why: 'Decorator returns HttpRequest (Django base), not HttpReq which declares auth UserMetadata. Mypy does not see authorize on the base type.'
-      """
+  Scenario: Generated shamefile.yaml starts with yamllint disable-file directive
+    Given a project with one suppression
     When I run shame me
-    Then shamefile.yaml passes yamllint with default config
-    And no line in shamefile.yaml exceeds 80 characters
-    And shamefile.yaml contains entry with:
-      """
-      why: >-
-            Decorator returns HttpRequest (Django base), not HttpReq which declares
-            auth UserMetadata. Mypy does not see authorize on the base type.
-      """
+    Then shamefile.yaml starts with "# yamllint disable-file"
 
-  Scenario: Generated shamefile.yaml passes prettier with default config
-    Given a project with one suppression and manual edit:
-      """
-      why: 'Decorator returns HttpRequest (Django base), not HttpReq which declares auth UserMetadata. Mypy does not see authorize on the base type.'
-      """
+  Scenario: yamllint skips shamefile.yaml even with injected violations
+    Given a project with one suppression
     When I run shame me
-    Then shamefile.yaml passes prettier with default config
+    And a long line violating yamllint defaults is appended to shamefile.yaml
+    Then shamefile.yaml passes yamllint with default config

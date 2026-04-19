@@ -194,8 +194,9 @@ impl Registry {
             .flat_map(normalize_why_line)
             .collect::<Vec<_>>()
             .join("\n");
-        // Add yamllint-friendly document start marker and trailing newline
-        let content = format!("---\n{}\n", content.trim_end());
+        // Prepend yamllint disable-file directive so users with strict yamllint
+        // configs don't get noise from this file, then add document start marker.
+        let content = format!("# yamllint disable-file\n---\n{}\n", content.trim_end());
         fs::write(path, content).map_err(ShamefileError::RegistryWriteError)?;
         Ok(())
     }

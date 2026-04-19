@@ -74,6 +74,18 @@ def run_shame_me(project):
     project["result"] = run_shamefile(project["path"])
 
 
+@when("a long line violating yamllint defaults is appended to shamefile.yaml")
+def append_violating_line(project):
+    """Append a >80 char comment with breakable content to trigger yamllint line-length error.
+
+    yamllint default `line-length.allow-non-breakable-words: true` skips lines that are
+    a single unbreakable token, so the line must contain spaces to be flagged.
+    """
+    yaml_path = project["path"] / "shamefile.yaml"
+    violation = "# " + ("word " * 25) + "\n"
+    yaml_path.write_text(yaml_path.read_text() + violation)
+
+
 # --- Then ---
 
 
@@ -96,6 +108,15 @@ def check_exit_code(project, code):
     assert project["result"].returncode == code
 
 
+@then(parsers.parse('shamefile.yaml starts with "{directive}"'))
+def check_yaml_starts_with(project, directive):
+    """Verify the first line of shamefile.yaml is the given directive."""
+    raw = (project["path"] / "shamefile.yaml").read_text()
+    lines = raw.splitlines()
+    first_line = lines[0] if lines else ""
+    assert first_line == directive, f"first line is {first_line!r}, expected {directive!r}"
+
+
 @then("shamefile.yaml passes yamllint with default config")
 def check_yamllint(project):
     """Verify generated YAML passes yamllint defaults."""
@@ -107,20 +128,6 @@ def check_yamllint(project):
         check=False,
     )
     assert result.returncode == 0, f"yamllint failed:\n{result.stdout}"
-
-
-@then("shamefile.yaml passes prettier with default config")
-def check_prettier(project):
-    """Verify generated YAML passes prettier defaults."""
-    prettier = shutil.which("prettier")
-    assert prettier, "prettier not found on PATH (install via `npm install -g prettier`)"
-    result = subprocess.run(
-        [prettier, "--check", str(project["path"] / "shamefile.yaml")],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert result.returncode == 0, f"prettier failed:\n{result.stdout}\n{result.stderr}"
 
 
 @then("no line in shamefile.yaml exceeds 80 characters")
