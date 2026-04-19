@@ -23,7 +23,7 @@ dev = [
     "pytest-bdd>=7.0",
     "pyyaml>=6.0",
     "ruff>=0.15",
-    "yamllint>=1.37",
+    "yamllint>=1.38.0",
 ]
 
 [tool.pytest.ini_options]
