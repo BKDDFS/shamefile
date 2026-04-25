@@ -18,7 +18,7 @@ scenarios("features/yaml_formatting_docstring.feature")
 @given("a project with one suppression", target_fixture="project")
 def project_with_suppression(tmp_path):
     """Create a project with one # noqa suppression and run initial shame me."""
-    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n", encoding="utf-8")
     run_shamefile(tmp_path)
     return {"path": tmp_path, "result": None}
 
@@ -36,10 +36,10 @@ def project_with_manual_edit(tmp_path, docstring):
     column chosen by our `indent_sequences` transform), this function re-indents
     every line of the docstring by the file's `why:` indent before substituting.
     """
-    (tmp_path / "test.py").write_text("x = 1  # noqa\n")
+    (tmp_path / "test.py").write_text("x = 1  # noqa\n", encoding="utf-8")
     run_shamefile(tmp_path)
     registry = tmp_path / "shamefile.yaml"
-    content = registry.read_text()
+    content = registry.read_text(encoding="utf-8")
     # Find the indent prefix of the `why: ''` line in the file
     indent = next(
         line[: len(line) - len(line.lstrip())]
@@ -49,7 +49,7 @@ def project_with_manual_edit(tmp_path, docstring):
     # Re-indent each line of the gherkin docstring to match the file's indent,
     # so `|` block continuations land at col > key indent (YAML requirement).
     replacement = "\n".join(indent + ln for ln in docstring.strip().splitlines())
-    registry.write_text(content.replace(indent + "why: ''", replacement))
+    registry.write_text(content.replace(indent + "why: ''", replacement), encoding="utf-8")
     return {"path": tmp_path, "result": None}
 
 
@@ -83,7 +83,7 @@ def append_violating_line(project):
     """
     yaml_path = project["path"] / "shamefile.yaml"
     violation = "# " + ("word " * 25) + "\n"
-    yaml_path.write_text(yaml_path.read_text() + violation)
+    yaml_path.write_text(yaml_path.read_text(encoding="utf-8") + violation, encoding="utf-8")
 
 
 # --- Then ---
@@ -97,7 +97,7 @@ def _parse_yaml_lines(docstring: str) -> dict:
 @then("shamefile.yaml contains entry with:")
 def check_yaml_contains_entry_with(project, docstring):
     """Verify the first entry in shamefile.yaml contains the expected raw lines."""
-    raw = (project["path"] / "shamefile.yaml").read_text()
+    raw = (project["path"] / "shamefile.yaml").read_text(encoding="utf-8")
     for line in docstring.strip().splitlines():
         assert line in raw, f"Expected line {line!r} not found in shamefile.yaml"
 
@@ -111,7 +111,7 @@ def check_exit_code(project, code):
 @then(parsers.parse('shamefile.yaml starts with "{directive}"'))
 def check_yaml_starts_with(project, directive):
     """Verify the first line of shamefile.yaml is the given directive."""
-    raw = (project["path"] / "shamefile.yaml").read_text()
+    raw = (project["path"] / "shamefile.yaml").read_text(encoding="utf-8")
     lines = raw.splitlines()
     first_line = lines[0] if lines else ""
     assert first_line == directive, f"first line is {first_line!r}, expected {directive!r}"
@@ -133,7 +133,7 @@ def check_yamllint(project):
 @then("no line in shamefile.yaml exceeds 80 characters")
 def check_max_line_length(project):
     """Verify yamllint-friendly line length."""
-    raw = (project["path"] / "shamefile.yaml").read_text()
+    raw = (project["path"] / "shamefile.yaml").read_text(encoding="utf-8")
     max_line_length = 80
     for line in raw.splitlines():
         assert len(line) <= max_line_length, (

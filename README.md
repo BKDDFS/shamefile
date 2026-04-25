@@ -147,11 +147,13 @@ Supported file extensions: `.py`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`.
 
 ## Installation
 
-Install from source with Cargo:
-
-```bash
-cargo install --git https://github.com/BKDDFS/shamefile
-```
+| Source | Command |
+|---|---|
+| **npm** | `npm install -g shamefile` |
+| **PyPI** | `pip install shamefile` |
+| **crates.io** | `cargo install shamefile` |
+| **From source** | `cargo install --git https://github.com/BKDDFS/shamefile` |
+| **Homebrew** | _coming soon_ |
 
 Or as a [pre-commit](https://pre-commit.com) hook:
 
@@ -162,8 +164,6 @@ Or as a [pre-commit](https://pre-commit.com) hook:
   hooks:
     - id: shamefile
 ```
-
-Prebuilt binaries and a `curl | bash` installer are on the roadmap.
 
 ## Roadmap
 

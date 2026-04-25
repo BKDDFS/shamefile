@@ -75,10 +75,11 @@ impl Entry {
     }
 
     pub fn make_location(file: &str, line: u32) -> String {
-        if file.starts_with("./") || file.starts_with('/') {
-            format!("{file}:{line}")
+        let normalized = file.replace('\\', "/");
+        if normalized.starts_with("./") || normalized.starts_with('/') {
+            format!("{normalized}:{line}")
         } else {
-            format!("./{file}:{line}")
+            format!("./{normalized}:{line}")
         }
     }
 }

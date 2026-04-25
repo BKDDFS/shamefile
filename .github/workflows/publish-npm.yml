@@ -1,0 +1,378 @@
+name: Publish to npm
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-npm-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  setup:
+    name: Resolve release metadata
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      npm_tag: ${{ steps.meta.outputs.npm_tag }}
+    steps:
+      - name: Compute version and npm dist-tag
+        id: meta
+        shell: bash
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+        run: |
+          set -euo pipefail
+          version="${TAG#v}"
+          if [ "${PRERELEASE}" = "true" ]; then
+            npm_tag="next"
+          else
+            npm_tag="latest"
+          fi
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "npm_tag=${npm_tag}" >> "$GITHUB_OUTPUT"
+          echo "Resolved version=${version} npm_tag=${npm_tag}"
+
+  build-binaries:
+    name: Build ${{ matrix.pkg }}
+    needs: setup
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            pkg: shamefile-linux-x64
+            bin: shame
+            archive: tar.gz
+            use_zigbuild: true
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            pkg: shamefile-linux-arm64
+            bin: shame
+            archive: tar.gz
+            use_zigbuild: true
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            pkg: shamefile-linux-x64-musl
+            bin: shame
+            archive: tar.gz
+            use_zigbuild: true
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            pkg: shamefile-linux-arm64-musl
+            bin: shame
+            archive: tar.gz
+            use_zigbuild: true
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            pkg: shamefile-darwin-x64
+            bin: shame
+            archive: tar.gz
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            pkg: shamefile-darwin-arm64
+            bin: shame
+            archive: tar.gz
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            pkg: shamefile-win32-x64
+            bin: shame.exe
+            archive: zip
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            pkg: shamefile-win32-arm64
+            bin: shame.exe
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: "1.95.0"
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Install zig and cargo-zigbuild (linux cross-compile)
+        if: matrix.use_zigbuild
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip install --quiet ziglang==0.14.1
+          cargo install --locked --version 0.22.2 cargo-zigbuild
+
+      - name: Build release binary (zigbuild)
+        if: matrix.use_zigbuild
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+        run: cargo zigbuild --release --locked --target "${TARGET}"
+
+      - name: Build release binary (native cargo)
+        if: ${{ !matrix.use_zigbuild }}
+        shell: bash
+        env:
+          CARGO_BUILD_TARGET: ${{ matrix.target }}
+        run: cargo build --release --locked
+
+      - name: Stage binary
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          BIN: ${{ matrix.bin }}
+        run: |
+          set -euo pipefail
+          mkdir -p staging
+          cp "target/${TARGET}/release/${BIN}" "staging/${BIN}"
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: binary-${{ matrix.pkg }}
+          path: staging/${{ matrix.bin }}
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Package release archive
+        shell: bash
+        env:
+          VERSION: ${{ needs.setup.outputs.version }}
+          TARGET: ${{ matrix.target }}
+          BIN: ${{ matrix.bin }}
+          ARCHIVE: ${{ matrix.archive }}
+        run: |
+          set -euo pipefail
+          mkdir -p release-archive
+          archive_name="shame-${VERSION}-${TARGET}"
+          if [ "${ARCHIVE}" = "zip" ]; then
+            (cd staging && 7z a "../release-archive/${archive_name}.zip" "${BIN}")
+          else
+            tar -czf "release-archive/${archive_name}.tar.gz" -C staging "${BIN}"
+          fi
+
+      - name: Upload release archive artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: archive-${{ matrix.pkg }}
+          path: release-archive/*
+          if-no-files-found: error
+          retention-days: 7
+
+  test-binaries:
+    name: Smoke test ${{ matrix.pkg }}
+    needs: [setup, build-binaries]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            pkg: shamefile-linux-x64
+            bin: shame
+          - os: ubuntu-latest
+            pkg: shamefile-linux-x64-musl
+            bin: shame
+            docker: alpine:3.19
+          - os: macos-latest
+            pkg: shamefile-darwin-arm64
+            bin: shame
+          - os: windows-latest
+            pkg: shamefile-win32-x64
+            bin: shame.exe
+    steps:
+      - name: Download binary artifact
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: binary-${{ matrix.pkg }}
+          path: bin
+
+      - name: Smoke test binary (host)
+        if: ${{ !matrix.docker }}
+        shell: bash
+        env:
+          BIN: ${{ matrix.bin }}
+          VERSION: ${{ needs.setup.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [ "${BIN}" != "shame.exe" ]; then
+            chmod +x "bin/${BIN}"
+          fi
+          actual=$("./bin/${BIN}" --version)
+          echo "shame --version -> ${actual}"
+          if ! echo "${actual}" | grep -qF "${VERSION}"; then
+            echo "::error::shame --version '${actual}' does not contain expected ${VERSION}"
+            exit 1
+          fi
+          "./bin/${BIN}" --help >/dev/null
+
+      - name: Smoke test binary (docker)
+        if: matrix.docker
+        shell: bash
+        env:
+          BIN: ${{ matrix.bin }}
+          VERSION: ${{ needs.setup.outputs.version }}
+          DOCKER_IMAGE: ${{ matrix.docker }}
+        run: |
+          set -euo pipefail
+          chmod +x "bin/${BIN}"
+          actual=$(docker run --rm -v "$(pwd)/bin:/bin-mount:ro" "${DOCKER_IMAGE}" "/bin-mount/${BIN}" --version)
+          echo "shame --version -> ${actual}"
+          if ! echo "${actual}" | grep -qF "${VERSION}"; then
+            echo "::error::shame --version '${actual}' does not contain expected ${VERSION}"
+            exit 1
+          fi
+          docker run --rm -v "$(pwd)/bin:/bin-mount:ro" "${DOCKER_IMAGE}" "/bin-mount/${BIN}" --help >/dev/null
+
+  publish:
+    name: Publish to npm
+    needs: [setup, build-binaries, test-binaries]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: "20"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Download all binary artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: binaries
+          pattern: "binary-*"
+
+      - name: Assemble and publish platform packages
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ needs.setup.outputs.version }}
+          NPM_TAG: ${{ needs.setup.outputs.npm_tag }}
+        run: |
+          set -euo pipefail
+          platforms=(
+            "shamefile-linux-x64:shame"
+            "shamefile-linux-arm64:shame"
+            "shamefile-linux-x64-musl:shame"
+            "shamefile-linux-arm64-musl:shame"
+            "shamefile-darwin-x64:shame"
+            "shamefile-darwin-arm64:shame"
+            "shamefile-win32-x64:shame.exe"
+            "shamefile-win32-arm64:shame.exe"
+          )
+          publish_with_retry() {
+            local dir="$1"
+            local attempt
+            for attempt in 1 2 3; do
+              if (cd "${dir}" && npm publish --tag "${NPM_TAG}"); then
+                return 0
+              fi
+              echo "::warning::npm publish ${dir} failed (attempt ${attempt}/3)"
+              sleep $((attempt * 10))
+            done
+            return 1
+          }
+          for entry in "${platforms[@]}"; do
+            pkg="${entry%%:*}"
+            bin="${entry##*:}"
+            echo "::group::Publishing ${pkg}@${VERSION} (tag=${NPM_TAG})"
+            cp "binaries/binary-${pkg}/${bin}" "npm/${pkg}/bin/${bin}"
+            rm -f "npm/${pkg}/bin/.gitkeep"
+            if [ "${bin}" != "shame.exe" ]; then
+              chmod +x "npm/${pkg}/bin/${bin}"
+            fi
+            node -e "
+              const fs = require('fs');
+              const p = 'npm/${pkg}/package.json';
+              const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+              j.version = process.env.VERSION;
+              fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
+            "
+            publish_with_retry "npm/${pkg}"
+            echo "::endgroup::"
+          done
+
+      - name: Publish main wrapper package
+        shell: bash
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          VERSION: ${{ needs.setup.outputs.version }}
+          NPM_TAG: ${{ needs.setup.outputs.npm_tag }}
+        run: |
+          set -euo pipefail
+          node -e "
+            const fs = require('fs');
+            const p = 'npm/shamefile/package.json';
+            const j = JSON.parse(fs.readFileSync(p, 'utf8'));
+            j.version = process.env.VERSION;
+            for (const dep of Object.keys(j.optionalDependencies)) {
+              j.optionalDependencies[dep] = process.env.VERSION;
+            }
+            fs.writeFileSync(p, JSON.stringify(j, null, 2) + '\n');
+          "
+          for attempt in 1 2 3; do
+            if (cd npm/shamefile && npm publish --tag "${NPM_TAG}"); then
+              exit 0
+            fi
+            echo "::warning::wrapper npm publish failed (attempt ${attempt}/3)"
+            sleep $((attempt * 10))
+          done
+          exit 1
+
+  release-assets:
+    name: Attach release archives
+    needs: [build-binaries, test-binaries]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: Download release archives
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: archives
+          pattern: "archive-*"
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd archives
+          sha256sum shame-* | sort > SHA256SUMS
+          echo "=== SHA256SUMS ==="
+          cat SHA256SUMS
+
+      - name: Attest build provenance for archives
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-path: archives/shame-*
+
+      - name: Upload archives and checksums to release
+        uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+        with:
+          files: |
+            archives/shame-*
+            archives/SHA256SUMS
+          fail_on_unmatched_files: true

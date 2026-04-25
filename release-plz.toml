@@ -1,0 +1,11 @@
+[workspace]
+# GitHub Releases are the changelog
+changelog_update = false
+git_release_enable = true
+git_release_draft = true
+
+# publish-cargo.yml handles that
+publish = false
+
+[[package]]
+name = "shamefile"
