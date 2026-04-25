@@ -15,7 +15,11 @@ pub fn find_git_root(start: &Path) -> Option<PathBuf> {
         return None;
     }
 
-    let path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    parse_git_root_stdout(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_git_root_stdout(stdout: &str) -> Option<PathBuf> {
+    let path = stdout.trim();
     if path.is_empty() {
         None
     } else {
@@ -89,7 +93,10 @@ pub fn detect_renames(registry_dir: &Path) -> std::collections::HashMap<String, 
         _ => return std::collections::HashMap::new(),
     };
 
-    let text = String::from_utf8_lossy(&output.stdout);
+    parse_renames(&String::from_utf8_lossy(&output.stdout))
+}
+
+fn parse_renames(text: &str) -> std::collections::HashMap<String, String> {
     let mut renames = std::collections::HashMap::new();
     for line in text.lines() {
         let parts: Vec<&str> = line.split('\t').collect();
@@ -108,6 +115,59 @@ pub fn detect_renames(registry_dir: &Path) -> std::collections::HashMap<String, 
         }
     }
     renames
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_renames_handles_dot_slash_prefix() {
+        let text = "R100\t./old.py\t./new.py\n";
+        let map = parse_renames(text);
+        assert_eq!(map.get("./old.py"), Some(&"./new.py".to_string()));
+    }
+
+    #[test]
+    fn parse_renames_adds_dot_slash_when_missing() {
+        let text = "R100\told.py\tnew.py\n";
+        let map = parse_renames(text);
+        assert_eq!(map.get("./old.py"), Some(&"./new.py".to_string()));
+    }
+
+    #[test]
+    fn parse_renames_handles_mixed_prefixes() {
+        let text = "R090\told.py\t./new.py\n";
+        let map = parse_renames(text);
+        assert_eq!(map.get("./old.py"), Some(&"./new.py".to_string()));
+    }
+
+    #[test]
+    fn parse_renames_skips_non_rename_lines() {
+        let text = "M\tunchanged.py\nA\tnew.py\nR100\told.py\tnewest.py\n";
+        let map = parse_renames(text);
+        assert_eq!(map.len(), 1);
+        assert!(map.contains_key("./old.py"));
+    }
+
+    #[test]
+    fn parse_renames_empty_input() {
+        assert!(parse_renames("").is_empty());
+    }
+
+    #[test]
+    fn parse_git_root_stdout_handles_empty_output() {
+        assert!(parse_git_root_stdout("").is_none());
+        assert!(parse_git_root_stdout("   \n").is_none());
+    }
+
+    #[test]
+    fn parse_git_root_stdout_returns_trimmed_path() {
+        assert_eq!(
+            parse_git_root_stdout("/repo/root\n"),
+            Some(PathBuf::from("/repo/root"))
+        );
+    }
 }
 
 fn get_git_config(key: &str, repo_path: &Path) -> Option<String> {

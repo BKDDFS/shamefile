@@ -169,19 +169,33 @@ mod tests {
         }
     }
 
-    #[test]
-    fn no_duplicate_extensions_across_languages() {
+    /// Returns the first extension claimed by two different languages, paired
+    /// with both language names. Takes (name, extensions) tuples so tests can
+    /// pass synthetic data without constructing full `Language` values.
+    fn first_duplicate_extension<'a>(
+        langs: impl IntoIterator<Item = (&'a str, &'a [&'a str])>,
+    ) -> Option<(&'a str, &'a str, &'a str)> {
         let mut seen = std::collections::HashMap::new();
-        for lang in LANGUAGES {
-            for ext in lang.extensions {
-                if let Some(other) = seen.insert(ext, lang.name) {
-                    panic!(
-                        "Extension '{ext}' claimed by both {other} and {}",
-                        lang.name
-                    );
+        for (name, extensions) in langs {
+            for ext in extensions {
+                if let Some(other) = seen.insert(*ext, name) {
+                    return Some((ext, other, name));
                 }
             }
         }
+        None
+    }
+
+    #[test]
+    fn no_duplicate_extensions_across_languages() {
+        let langs = LANGUAGES.iter().map(|l| (l.name, l.extensions));
+        assert_eq!(first_duplicate_extension(langs), None);
+    }
+
+    #[test]
+    fn first_duplicate_extension_finds_collision() {
+        let langs = [("A", &["xx"][..]), ("B", &["xx"][..])];
+        assert_eq!(first_duplicate_extension(langs), Some(("xx", "A", "B")));
     }
 
     #[test]

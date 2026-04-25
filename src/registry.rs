@@ -315,3 +315,177 @@ fn normalize_why_line(line: &str) -> Vec<String> {
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn content_hash_trims_whitespace() {
+        assert_eq!(content_hash("  foo  "), "foo");
+        assert_eq!(content_hash("\t\nbar\n"), "bar");
+    }
+
+    #[test]
+    fn content_hash_preserves_internal_whitespace() {
+        assert_eq!(content_hash("  a  b  "), "a  b");
+    }
+
+    #[test]
+    fn content_hash_empty() {
+        assert_eq!(content_hash("   \t\n"), "");
+    }
+
+    #[test]
+    fn extract_entry_start_lines_basic() {
+        let yaml = "\
+config: {}
+entries:
+- location: ./a.py:1
+  token: \"# noqa\"
+- location: ./b.py:2
+  token: \"# noqa\"
+";
+        assert_eq!(extract_entry_start_lines(yaml), vec![3, 5]);
+    }
+
+    #[test]
+    fn extract_entry_start_lines_empty_when_no_entries_section() {
+        let yaml = "config: {}\n";
+        assert!(extract_entry_start_lines(yaml).is_empty());
+    }
+
+    #[test]
+    fn extract_entry_start_lines_stops_at_next_top_level_key() {
+        let yaml = "\
+entries:
+- location: ./a.py:1
+other:
+- location: ./should_not_match.py:1
+";
+        assert_eq!(extract_entry_start_lines(yaml), vec![2]);
+    }
+
+    #[test]
+    fn deserialize_created_at_accepts_rfc3339() {
+        let parsed: EntryStub =
+            serde_yaml::from_str("created_at: \"2024-01-15T10:30:00Z\"").unwrap();
+        assert_eq!(parsed.created_at.to_rfc3339(), "2024-01-15T10:30:00+00:00");
+    }
+
+    #[test]
+    fn deserialize_created_at_accepts_date_only() {
+        let parsed: EntryStub = serde_yaml::from_str("created_at: \"2024-01-15\"").unwrap();
+        assert_eq!(parsed.created_at.to_rfc3339(), "2024-01-15T00:00:00+00:00");
+    }
+
+    #[test]
+    fn deserialize_created_at_rejects_garbage() {
+        let err = serde_yaml::from_str::<EntryStub>("created_at: \"not a date\"").unwrap_err();
+        assert!(err.to_string().contains("invalid created_at"));
+    }
+
+    #[test]
+    fn deserialize_why_treats_missing_as_empty() {
+        let parsed: WhyStub = serde_yaml::from_str("why: null").unwrap();
+        assert_eq!(parsed.why, "");
+    }
+
+    #[test]
+    fn deserialize_why_passes_through_strings() {
+        let parsed: WhyStub = serde_yaml::from_str("why: 'because reasons'").unwrap();
+        assert_eq!(parsed.why, "because reasons");
+    }
+
+    #[test]
+    fn entry_file_and_line_split_on_colon() {
+        let e = make_entry("./src/foo.py:42", "# noqa");
+        assert_eq!(e.file(), "./src/foo.py");
+        assert_eq!(e.line(), 42);
+    }
+
+    #[test]
+    fn entry_line_returns_zero_for_unparseable() {
+        let e = make_entry("./src/foo.py:not_a_number", "# noqa");
+        assert_eq!(e.line(), 0);
+    }
+
+    #[test]
+    fn make_location_normalizes_windows_separators() {
+        assert_eq!(Entry::make_location("src\\foo.py", 7), "./src/foo.py:7");
+    }
+
+    #[test]
+    fn make_location_preserves_dot_slash() {
+        assert_eq!(Entry::make_location("./src/foo.py", 7), "./src/foo.py:7");
+    }
+
+    #[test]
+    fn make_location_preserves_absolute_path() {
+        assert_eq!(Entry::make_location("/abs/foo.py", 7), "/abs/foo.py:7");
+    }
+
+    #[test]
+    fn registry_default_is_empty() {
+        let r = Registry::default();
+        assert!(r.entries.is_empty());
+    }
+
+    #[test]
+    fn load_reports_flow_style_duplicates_without_line_refs() {
+        // Flow-style entries don't produce `- location:` lines, so
+        // extract_entry_start_lines returns an empty Vec — this hits the
+        // `refs.is_empty()` branch in the duplicate-error formatter.
+        let yaml = "\
+config: {}
+entries: [{location: ./a.py:1, token: \"# noqa\", content: x, created_at: \"2024-01-15\", owner: a, why: w}, {location: ./a.py:1, token: \"# noqa\", content: x, created_at: \"2024-01-15\", owner: a, why: w}]
+";
+        let tmp = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(tmp.path(), yaml).unwrap();
+        let err = Registry::load(tmp.path()).unwrap_err();
+        let msg = err.to_string();
+        assert!(msg.contains("duplicates"), "got: {msg}");
+        // No line refs because flow-style YAML has no `- location:` markers.
+        assert!(!msg.contains(":2"), "got: {msg}");
+    }
+
+    #[test]
+    fn normalize_why_line_folds_long_double_quoted_value() {
+        // A double-quoted long value isn't re-wrapped in single quotes, so
+        // the folding path takes the `value_part.to_string()` branch.
+        let long = "x".repeat(120);
+        let line = format!("  why: \"{long}\"");
+        let folded = normalize_why_line(&line);
+        assert!(folded.len() > 1, "expected folded output, got: {folded:?}");
+        assert_eq!(folded[0], "  why: >-");
+    }
+
+    #[test]
+    fn normalize_why_line_passes_through_non_why_lines() {
+        let lines = normalize_why_line("  location: ./a.py:1");
+        assert_eq!(lines, vec!["  location: ./a.py:1".to_string()]);
+    }
+
+    #[derive(Debug, Deserialize)]
+    struct EntryStub {
+        #[serde(deserialize_with = "deserialize_created_at")]
+        created_at: DateTime<Utc>,
+    }
+
+    #[derive(Deserialize)]
+    struct WhyStub {
+        #[serde(deserialize_with = "deserialize_why")]
+        why: String,
+    }
+
+    fn make_entry(location: &str, token: &str) -> Entry {
+        Entry {
+            location: location.to_string(),
+            token: token.to_string(),
+            content: String::new(),
+            created_at: Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap(),
+            owner: String::new(),
+            why: String::new(),
+        }
+    }
+}
