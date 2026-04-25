@@ -39,7 +39,7 @@
     "shamefile-linux-arm64-musl": "0.0.0",
     "shamefile-darwin-x64": "0.0.0",
     "shamefile-darwin-arm64": "0.0.0",
-    "shamefile-win32-x64": "0.0.0",
-    "shamefile-win32-arm64": "0.0.0"
+    "shamefile-windows-x64": "0.0.0",
+    "shamefile-windows-arm64": "0.0.0"
   }
 }

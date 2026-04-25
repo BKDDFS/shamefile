@@ -1,7 +1,7 @@
 {
-  "name": "shamefile-win32-arm64",
+  "name": "shamefile-windows-arm64",
   "version": "0.0.0",
-  "description": "shamefile binary for win32-arm64. Installed automatically via the `shamefile` package.",
+  "description": "shamefile binary for windows-arm64. Installed automatically via the `shamefile` package.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

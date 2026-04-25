@@ -83,12 +83,12 @@ jobs:
             archive: tar.gz
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            pkg: shamefile-win32-x64
+            pkg: shamefile-windows-x64
             bin: shame.exe
             archive: zip
           - os: windows-latest
             target: aarch64-pc-windows-msvc
-            pkg: shamefile-win32-arm64
+            pkg: shamefile-windows-arm64
             bin: shame.exe
             archive: zip
 
@@ -191,7 +191,7 @@ jobs:
             pkg: shamefile-darwin-arm64
             bin: shame
           - os: windows-latest
-            pkg: shamefile-win32-x64
+            pkg: shamefile-windows-x64
             bin: shame.exe
     steps:
       - name: Download binary artifact
@@ -276,8 +276,8 @@ jobs:
             "shamefile-linux-arm64-musl:shame"
             "shamefile-darwin-x64:shame"
             "shamefile-darwin-arm64:shame"
-            "shamefile-win32-x64:shame.exe"
-            "shamefile-win32-arm64:shame.exe"
+            "shamefile-windows-x64:shame.exe"
+            "shamefile-windows-arm64:shame.exe"
           )
           publish_with_retry() {
             local dir="$1"
