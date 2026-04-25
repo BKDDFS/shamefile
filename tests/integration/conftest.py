@@ -1,6 +1,16 @@
+import os
 import re
 import subprocess
 from pathlib import Path
+
+# Strip GIT_* vars at conftest-import time so subprocess git calls in tests
+# don't leak the parent repo's .git, hooks path, or index. This happens when
+# pytest runs under a git hook (e.g. `git push`'s pre-push) that exports
+# GIT_DIR / GIT_INDEX_FILE for hook execution. Doing this at import (not in
+# an autouse fixture) ensures module-level snapshots like NO_GLOBAL_GIT in
+# test_registry_format_owner.py are clean before they are captured.
+for _k in [k for k in os.environ if k.startswith("GIT_")]:
+    del os.environ[_k]
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 LANGUAGES_RS_PATH = PROJECT_ROOT / "src" / "languages.rs"
