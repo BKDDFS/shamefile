@@ -1,14 +1,15 @@
 use crate::languages::Language;
 use crate::scanner::Violation;
 use std::ops::Range;
-use tree_sitter::Parser;
+use tree_sitter::{Parser, Tree};
 
 /// Filter out violations where the matched token is not inside a comment.
 ///
 /// Uses tree-sitter to parse the source and identify comment byte ranges.
 /// Keeps only violations where at least one occurrence of the token falls
-/// inside a comment. If parsing fails, returns all violations unchanged
-/// (graceful degradation).
+/// inside a comment. If parsing fails or yields ERROR nodes, returns all
+/// violations unchanged (graceful degradation — an unclosed `/* */` block
+/// would otherwise misclassify code as comments).
 pub fn filter_non_comments(
     source: &str,
     lang: &Language,
@@ -18,23 +19,26 @@ pub fn filter_non_comments(
         return violations;
     }
 
+    match build_tree(source, lang) {
+        Some(tree) if !tree.root_node().has_error() => {
+            filter_with_tree(source, lang, &tree, violations)
+        }
+        _ => violations,
+    }
+}
+
+fn build_tree(source: &str, lang: &Language) -> Option<Tree> {
     let mut parser = Parser::new();
-    if parser.set_language(&(lang.grammar)()).is_err() {
-        return violations;
-    }
+    parser.set_language(&(lang.grammar)()).ok()?;
+    parser.parse(source, None)
+}
 
-    let tree = match parser.parse(source, None) {
-        Some(t) => t,
-        None => return violations,
-    };
-
-    // If tree-sitter couldn't fully parse the file, don't filter — keep all violations.
-    // Incomplete constructs (e.g. unclosed /* block comments) produce ERROR nodes that
-    // can't be reliably classified as comments or non-comments.
-    if tree.root_node().has_error() {
-        return violations;
-    }
-
+fn filter_with_tree(
+    source: &str,
+    lang: &Language,
+    tree: &Tree,
+    violations: Vec<Violation>,
+) -> Vec<Violation> {
     let mut comment_ranges = Vec::new();
     collect_node_ranges(tree.root_node(), lang.comment_types, &mut comment_ranges);
 

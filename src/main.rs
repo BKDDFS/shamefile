@@ -195,9 +195,21 @@ fn handle_me(scan_paths: &[PathBuf], dry_run: bool, hidden: bool) -> Result<()> 
 
     // 4. Dispatch
     if dry_run {
-        handle_dry_run(scan_paths, &config_path, &registry_dir, hidden)
+        handle_dry_run(
+            scan_paths,
+            &config_path,
+            &registry_dir,
+            &registry_dir_canonical,
+            hidden,
+        )
     } else {
-        handle_normal(scan_paths, &config_path, &registry_dir, hidden)
+        handle_normal(
+            scan_paths,
+            &config_path,
+            &registry_dir,
+            &registry_dir_canonical,
+            hidden,
+        )
     }
 }
 
@@ -207,32 +219,20 @@ struct NormalizedScanData {
     skipped_files: HashSet<PathBuf>,
 }
 
-/// Filters out shamefile.yaml from violations and normalizes paths relative to registry_dir.
+/// Normalizes paths relative to `registry_dir_canonical`. Caller is responsible
+/// for canonicalizing the registry dir up front (handle_me does this).
 fn filter_and_normalize(
     violations: Vec<scanner::Violation>,
     scanned_files: HashSet<PathBuf>,
     skipped_files: HashSet<PathBuf>,
-    config_path: &Path,
-    registry_dir: &Path,
-) -> Result<NormalizedScanData> {
-    let registry_dir_canonical =
-        std::fs::canonicalize(registry_dir).context("Failed to canonicalize registry directory")?;
-    let config_path_canonical =
-        std::fs::canonicalize(config_path).unwrap_or_else(|_| config_path.to_path_buf());
-
+    registry_dir_canonical: &Path,
+) -> NormalizedScanData {
     let normalized_violations = violations
         .into_iter()
         .filter_map(|mut v| {
             let v_canonical = std::fs::canonicalize(&v.path).ok()?;
-
-            if v_canonical == config_path_canonical {
-                return None;
-            }
-
-            if let Ok(relative) = v_canonical.strip_prefix(&registry_dir_canonical) {
-                v.path = PathBuf::from("./").join(relative);
-            }
-
+            let relative = v_canonical.strip_prefix(registry_dir_canonical).ok()?;
+            v.path = PathBuf::from("./").join(relative);
             Some(v)
         })
         .collect();
@@ -242,26 +242,26 @@ fn filter_and_normalize(
             .into_iter()
             .filter_map(|f| {
                 let f_canonical = std::fs::canonicalize(&f).ok()?;
-                if let Ok(relative) = f_canonical.strip_prefix(&registry_dir_canonical) {
-                    Some(PathBuf::from("./").join(relative))
-                } else {
-                    Some(f)
-                }
+                f_canonical
+                    .strip_prefix(registry_dir_canonical)
+                    .ok()
+                    .map(|r| PathBuf::from("./").join(r))
             })
             .collect()
     };
 
-    Ok(NormalizedScanData {
+    NormalizedScanData {
         violations: normalized_violations,
         scanned_files: normalize_paths(scanned_files),
         skipped_files: normalize_paths(skipped_files),
-    })
+    }
 }
 
 fn handle_normal(
     scan_paths: &[PathBuf],
     config_path: &Path,
     registry_dir: &Path,
+    registry_dir_canonical: &Path,
     hidden: bool,
 ) -> Result<()> {
     // 1. Load or create registry
@@ -288,9 +288,8 @@ fn handle_normal(
         all_violations,
         all_scanned_files,
         all_skipped_files,
-        config_path,
-        registry_dir,
-    )?;
+        registry_dir_canonical,
+    );
     let mut violations = scan_data.violations;
     let scanned_files = scan_data.scanned_files;
     let skipped_files = scan_data.skipped_files;
@@ -309,15 +308,13 @@ fn handle_normal(
     let matches = cascade_match(&registry.entries, &violations, &renames);
     let old_entries = std::mem::take(&mut registry.entries);
 
-    let registry_dir_canonical =
-        std::fs::canonicalize(registry_dir).unwrap_or_else(|_| registry_dir.to_path_buf());
     let scan_paths_canonical: Vec<PathBuf> = scan_paths
         .iter()
         .filter_map(|p| std::fs::canonicalize(p).ok())
-        .map(|c| {
-            c.strip_prefix(&registry_dir_canonical)
+        .filter_map(|c| {
+            c.strip_prefix(registry_dir_canonical)
+                .ok()
                 .map(|r| r.to_path_buf())
-                .unwrap_or(c)
         })
         .collect();
 
@@ -372,12 +369,12 @@ fn handle_normal(
             &scanned_files,
             &skipped_files,
             &scan_paths_canonical,
-            &registry_dir_canonical,
+            registry_dir_canonical,
         );
         let entry_file_raw = PathBuf::from(old.file());
         let entry_file_normalized = if entry_file_raw.is_absolute() {
             entry_file_raw
-                .strip_prefix(&registry_dir_canonical)
+                .strip_prefix(registry_dir_canonical)
                 .map(|p| p.to_path_buf())
                 .unwrap_or(entry_file_raw)
         } else {
@@ -480,6 +477,7 @@ fn handle_dry_run(
     scan_paths: &[PathBuf],
     config_path: &Path,
     registry_dir: &Path,
+    registry_dir_canonical: &Path,
     hidden: bool,
 ) -> Result<()> {
     // 1. Load existing registry (fail if missing)
@@ -507,9 +505,8 @@ fn handle_dry_run(
         all_violations,
         all_scanned_files,
         all_skipped_files,
-        config_path,
-        registry_dir,
-    )?;
+        registry_dir_canonical,
+    );
     let mut violations = scan_data.violations;
     let scanned_files = scan_data.scanned_files;
     let skipped_files = scan_data.skipped_files;
@@ -560,15 +557,13 @@ fn handle_dry_run(
 
     // Step 3: Stale check (registry ⊆ code, scoped to scanned files)
     println!("\nStep 3: Checking for stale entries (shamefile -> code)...");
-    let registry_dir_canonical =
-        std::fs::canonicalize(registry_dir).unwrap_or_else(|_| registry_dir.to_path_buf());
     let scan_paths_canonical: Vec<PathBuf> = scan_paths
         .iter()
         .filter_map(|p| std::fs::canonicalize(p).ok())
-        .map(|c| {
-            c.strip_prefix(&registry_dir_canonical)
+        .filter_map(|c| {
+            c.strip_prefix(registry_dir_canonical)
+                .ok()
                 .map(|r| r.to_path_buf())
-                .unwrap_or(c)
         })
         .collect();
     let stale: Vec<_> = registry
@@ -584,7 +579,7 @@ fn handle_dry_run(
                 &scanned_files,
                 &skipped_files,
                 &scan_paths_canonical,
-                &registry_dir_canonical,
+                registry_dir_canonical,
             )
         })
         .map(|(_, e)| e)
@@ -777,4 +772,150 @@ fn handle_fix(location: &str, token: &str, why: &str) -> Result<()> {
     print_remaining(remaining);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::TimeZone;
+    use std::collections::HashMap;
+
+    fn entry(location: &str, token: &str, content: &str) -> Entry {
+        Entry {
+            location: location.to_string(),
+            token: token.to_string(),
+            content: content.to_string(),
+            created_at: Utc.with_ymd_and_hms(2024, 1, 1, 0, 0, 0).unwrap(),
+            owner: "alice".to_string(),
+            why: "because".to_string(),
+        }
+    }
+
+    fn violation(path: &str, line: u32, content: &str, token: &str) -> scanner::Violation {
+        scanner::Violation {
+            path: PathBuf::from(path),
+            line_number: line,
+            line_content: content.to_string(),
+            matched_token: token.to_string(),
+        }
+    }
+
+    #[test]
+    fn cascade_match_exact_location_pairs_each_violation_with_its_entry() {
+        let entries = vec![
+            entry("./a.py:10", "# noqa", "x = 1  # noqa"),
+            entry("./b.py:20", "# noqa", "y = 2  # noqa"),
+        ];
+        let violations = vec![
+            violation("./a.py", 10, "x = 1  # noqa", "# noqa"),
+            violation("./b.py", 20, "y = 2  # noqa", "# noqa"),
+        ];
+        let m = cascade_match(&entries, &violations, &HashMap::new());
+        assert_eq!(m.violation_to_entry, vec![Some(0), Some(1)]);
+        assert_eq!(m.entry_to_violation, vec![Some(0), Some(1)]);
+    }
+
+    #[test]
+    fn cascade_match_uses_content_hash_when_line_shifted() {
+        // Entry was at line 10, now the same content is at line 12 (line shift after edit).
+        let entries = vec![entry("./a.py:10", "# noqa", "x = 1  # noqa")];
+        let violations = vec![violation("./a.py", 12, "x = 1  # noqa", "# noqa")];
+        let m = cascade_match(&entries, &violations, &HashMap::new());
+        assert_eq!(m.violation_to_entry, vec![Some(0)]);
+    }
+
+    #[test]
+    fn cascade_match_follows_renames() {
+        // Entry references old.py but the file was renamed to new.py; content unchanged.
+        let entries = vec![entry("./old.py:10", "# noqa", "x = 1  # noqa")];
+        let violations = vec![violation("./new.py", 10, "x = 1  # noqa", "# noqa")];
+        let mut renames = HashMap::new();
+        renames.insert("./old.py".to_string(), "./new.py".to_string());
+        let m = cascade_match(&entries, &violations, &renames);
+        assert_eq!(m.violation_to_entry, vec![Some(0)]);
+    }
+
+    #[test]
+    fn cascade_match_unmatched_violation_has_none() {
+        let entries: Vec<Entry> = vec![];
+        let violations = vec![violation("./a.py", 1, "x = 1  # noqa", "# noqa")];
+        let m = cascade_match(&entries, &violations, &HashMap::new());
+        assert_eq!(m.violation_to_entry, vec![None]);
+    }
+
+    #[test]
+    fn cascade_match_does_not_pair_different_tokens_at_same_location() {
+        let entries = vec![entry(
+            "./a.py:10",
+            "# noqa",
+            "x = 1  # noqa  # type: ignore",
+        )];
+        let violations = vec![violation(
+            "./a.py",
+            10,
+            "x = 1  # noqa  # type: ignore",
+            "# type: ignore",
+        )];
+        let m = cascade_match(&entries, &violations, &HashMap::new());
+        assert_eq!(m.violation_to_entry, vec![None]);
+        assert_eq!(m.entry_to_violation, vec![None]);
+    }
+
+    #[test]
+    fn is_entry_in_scope_true_when_file_was_scanned() {
+        let entry = entry("./src/foo.py:1", "# noqa", "");
+        let mut scanned = HashSet::new();
+        scanned.insert(PathBuf::from("./src/foo.py"));
+        let registry_dir = PathBuf::from("/repo");
+        assert!(is_entry_in_scope(
+            &entry,
+            &scanned,
+            &HashSet::new(),
+            &[],
+            &registry_dir,
+        ));
+    }
+
+    #[test]
+    fn is_entry_in_scope_false_when_file_was_skipped() {
+        let entry = entry("./src/foo.py:1", "# noqa", "");
+        let mut skipped = HashSet::new();
+        skipped.insert(PathBuf::from("./src/foo.py"));
+        let registry_dir = PathBuf::from("/repo");
+        assert!(!is_entry_in_scope(
+            &entry,
+            &HashSet::new(),
+            &skipped,
+            &[],
+            &registry_dir,
+        ));
+    }
+
+    #[test]
+    fn is_entry_in_scope_falls_back_to_path_prefix() {
+        let entry = entry("./src/foo.py:1", "# noqa", "");
+        let scan_paths = vec![PathBuf::from("./src")];
+        let registry_dir = PathBuf::from("/repo");
+        assert!(is_entry_in_scope(
+            &entry,
+            &HashSet::new(),
+            &HashSet::new(),
+            &scan_paths,
+            &registry_dir,
+        ));
+    }
+
+    #[test]
+    fn is_entry_in_scope_false_when_outside_scan_paths() {
+        let entry = entry("./other/foo.py:1", "# noqa", "");
+        let scan_paths = vec![PathBuf::from("./src")];
+        let registry_dir = PathBuf::from("/repo");
+        assert!(!is_entry_in_scope(
+            &entry,
+            &HashSet::new(),
+            &HashSet::new(),
+            &scan_paths,
+            &registry_dir,
+        ));
+    }
 }

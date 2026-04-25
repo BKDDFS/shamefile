@@ -64,6 +64,29 @@ def test_permission_denied_file_skipped_with_warning(tmp_path):
         secret.chmod(0o644)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="POSIX chmod(0o000) has no effect on Windows; needs ACL-based equivalent",
+)
+def test_dry_run_reports_skipped_files(tmp_path):
+    """Dry-run mode should also surface unreadable files in stdout."""
+    (tmp_path / "ok.py").write_text("x = 1  # noqa\n")
+    secret = tmp_path / "secret.py"
+    secret.write_text("y = 2  # type: ignore\n")
+
+    # Create registry first (normal run), then chmod and re-run with --dry-run.
+    run_shamefile(tmp_path)
+    secret.chmod(0o000)
+    try:
+        result = run_shamefile(tmp_path, "--dry-run")
+
+        assert result.returncode < SIGNAL_EXIT_CODE, "process killed by signal"
+        assert "Skipped unreadable file" in result.stdout
+        assert "secret.py" in result.stdout
+    finally:
+        secret.chmod(0o644)
+
+
 def test_unreadable_file_does_not_remove_existing_entries(tmp_path):
     """An unreadable file should not cause its existing registry entries to be removed."""
     target = tmp_path / "target.py"

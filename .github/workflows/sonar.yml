@@ -33,8 +33,28 @@ jobs:
         with:
           tool: cargo-llvm-cov
 
-      - name: Generate coverage
-        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
+      - name: Sync dev dependencies
+        run: uv sync --extra dev --frozen --no-install-project
+
+      - name: Collect coverage from unit + integration tests
+        # Keep as one step: show-env quotes values for shell, $GITHUB_ENV would mangle them.
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(cargo llvm-cov show-env --sh)"
+          cargo llvm-cov clean --workspace
+          cargo build --all-features --workspace
+          cargo test --all-features --workspace
+          uv run pytest tests/ -n auto
+          cargo llvm-cov report --lcov --output-path lcov.info
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@299e4b793aaa83bf2aba7c9c14bedbb485688ec4 # v7.1.0
