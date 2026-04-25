@@ -44,26 +44,21 @@ jobs:
       - name: Sync dev dependencies
         run: uv sync --extra dev --frozen --no-install-project
 
-      - name: Export llvm-cov environment
-        # show-env (without --sh) emits KEY=VALUE lines suitable for $GITHUB_ENV.
-        # The --sh / --export-prefix variant prepends `export `, which would
-        # leave RUSTFLAGS / LLVM_PROFILE_FILE unset under GitHub Actions parsing.
-        run: cargo llvm-cov show-env >> "$GITHUB_ENV"
-
-      - name: Clean previous coverage data
-        run: cargo llvm-cov clean --workspace
-
-      - name: Build instrumented binary
-        run: cargo build --all-features --workspace
-
-      - name: Run unit tests under coverage
-        run: cargo test --all-features --workspace
-
-      - name: Run integration tests against instrumented binary
-        run: uv run pytest tests/ -n auto
-
-      - name: Generate LCOV report
-        run: cargo llvm-cov report --lcov --output-path lcov.info
+      - name: Collect coverage from unit + integration tests
+        # All coverage steps live in one bash script so the env vars set by
+        # `cargo llvm-cov show-env --sh` (RUSTFLAGS, LLVM_PROFILE_FILE, ...)
+        # propagate cleanly via `eval`. Routing through $GITHUB_ENV breaks:
+        # show-env emits values single-quoted as shell syntax, but Actions
+        # parses $GITHUB_ENV literally and the quotes become part of the value.
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(cargo llvm-cov show-env --sh)"
+          cargo llvm-cov clean --workspace
+          cargo build --all-features --workspace
+          cargo test --all-features --workspace
+          uv run pytest tests/ -n auto
+          cargo llvm-cov report --lcov --output-path lcov.info
 
       - name: SonarCloud Scan
         uses: SonarSource/sonarqube-scan-action@299e4b793aaa83bf2aba7c9c14bedbb485688ec4 # v7.1.0
