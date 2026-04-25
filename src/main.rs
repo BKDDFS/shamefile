@@ -93,6 +93,7 @@ fn is_entry_in_scope(
 
 #[derive(Parser)]
 #[command(name = "shame")]
+#[command(version)]
 #[command(about = "A tool to enforce documentation for code suppressions", long_about = None)]
 struct Cli {
     #[command(subcommand)]
