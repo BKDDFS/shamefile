@@ -4,6 +4,13 @@ version = "0.1.0-rc.1"
 edition = "2024"
 rust-version = "1.95"
 license = "Apache-2.0"
+description = "Turn linter suppressions from silent technical debt into reviewable, documented decisions."
+repository = "https://github.com/BKDDFS/shamefile"
+homepage = "https://github.com/BKDDFS/shamefile"
+documentation = "https://github.com/BKDDFS/shamefile#readme"
+readme = "README.md"
+keywords = ["cli", "linter", "suppressions", "code-quality", "pre-commit"]
+categories = ["command-line-utilities", "development-tools"]
 
 [[bin]]
 name = "shame"
