@@ -33,8 +33,8 @@ const platformMap = {
   "linux-arm64-musl": { pkg: "shamefile-linux-arm64-musl", bin: "shame" },
   "darwin-x64":       { pkg: "shamefile-darwin-x64",       bin: "shame" },
   "darwin-arm64":     { pkg: "shamefile-darwin-arm64",     bin: "shame" },
-  "win32-x64":        { pkg: "shamefile-win32-x64",        bin: "shame.exe" },
-  "win32-arm64":      { pkg: "shamefile-win32-arm64",      bin: "shame.exe" },
+  "win32-x64":        { pkg: "shamefile-windows-x64",      bin: "shame.exe" },
+  "win32-arm64":      { pkg: "shamefile-windows-arm64",    bin: "shame.exe" },
 };
 
 const base = `${process.platform}-${process.arch}`;
