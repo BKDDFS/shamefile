@@ -23,7 +23,7 @@ dev = [
     "pytest-bdd>=7.0",
     "pytest-xdist>=3.0",
     "pyyaml>=6.0",
-    "ruff>=0.15",
+    "ruff>=0.15.12",
     "yamllint>=1.37",
 ]
 
