@@ -6,7 +6,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 concurrency:
   group: publish-cargo-${{ github.event.release.tag_name }}
@@ -29,11 +28,13 @@ jobs:
       - name: Cache cargo
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
 
-      - name: Authenticate to crates.io via OIDC
-        id: auth
-        uses: rust-lang/crates-io-auth-action@bbd81622f20ce9e2dd9622e3218b975523e45bbe # v1.0.4
-
+      # TEMPORARY: bootstrap publish for a brand-new crate. crates.io Trusted
+      # Publishing is per-crate and requires the crate to already exist, so
+      # the very first publish has to use a static API token. After this
+      # release, configure Trusted Publishing on crates.io/crates/shamefile,
+      # restore the OIDC auth step, drop CARGO_REGISTRY_TOKEN and id-token
+      # permission. Tracked in a follow-up issue.
       - name: Publish to crates.io
         env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
         run: cargo publish --locked
