@@ -82,6 +82,28 @@ def test_fix_missing_why_flag_fails(tmp_path):
     assert result.returncode == CLAP_USAGE_EXIT_CODE
 
 
+def test_fix_rejects_empty_why(tmp_path):
+    """Shame fix with empty --why should fail before touching the registry."""
+    (tmp_path / "test.py").write_text(FIVE_SUPPRESSIONS)
+    run_shamefile(tmp_path)
+
+    result = run_shame_fix(tmp_path, "./test.py:1", "# noqa", "--why", "")
+
+    assert result.returncode == 1
+    assert "cannot be empty" in result.stderr
+
+
+def test_fix_rejects_whitespace_only_why(tmp_path):
+    """Shame fix with whitespace-only --why should fail."""
+    (tmp_path / "test.py").write_text(FIVE_SUPPRESSIONS)
+    run_shamefile(tmp_path)
+
+    result = run_shame_fix(tmp_path, "./test.py:1", "# noqa", "--why", "   \t")
+
+    assert result.returncode == 1
+    assert "cannot be empty" in result.stderr
+
+
 def test_fix_no_registry(tmp_path):
     """Shame fix without registry should fail with helpful message."""
     result = run_shame_fix(tmp_path, "./test.py:1", "# noqa", "--why", "reason")

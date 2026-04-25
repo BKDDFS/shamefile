@@ -68,6 +68,52 @@ def test_next_no_registry(tmp_path):
     assert "Registry not found" in result.stderr
 
 
+def test_next_snippet_handles_missing_source_file(tmp_path):
+    """Shame next should print location only when entry's source file is gone."""
+    registry = tmp_path / "shamefile.yaml"
+    registry.write_text(
+        "---\n"
+        "config: {}\n"
+        "entries:\n"
+        "  - location: ./gone.py:1\n"
+        "    token: '# noqa'\n"
+        "    content: 'x = 1  # noqa'\n"
+        "    created_at: '2024-01-15T00:00:00Z'\n"
+        "    owner: alice\n"
+        "    why: ''\n"
+    )
+
+    result = run_shame_next(tmp_path)
+
+    assert result.returncode == 0
+    assert "./gone.py:1" in result.stdout
+    # No snippet rendered because source file does not exist.
+    assert "    |" not in result.stdout
+
+
+def test_next_snippet_handles_line_beyond_eof(tmp_path):
+    """Shame next should skip the snippet body when the line is past EOF."""
+    (tmp_path / "short.py").write_text("only_one_line = 1\n")
+    registry = tmp_path / "shamefile.yaml"
+    registry.write_text(
+        "---\n"
+        "config: {}\n"
+        "entries:\n"
+        "  - location: ./short.py:99\n"
+        "    token: '# noqa'\n"
+        "    content: 'x'\n"
+        "    created_at: '2024-01-15T00:00:00Z'\n"
+        "    owner: alice\n"
+        "    why: ''\n"
+    )
+
+    result = run_shame_next(tmp_path)
+
+    assert result.returncode == 0
+    assert "./short.py:99" in result.stdout
+    assert "    |" not in result.stdout
+
+
 def test_next_with_reason_documents_entry(tmp_path):
     """Shame next with reason should fill the why field."""
     (tmp_path / "test.py").write_text(FIVE_SUPPRESSIONS)

@@ -13,3 +13,7 @@ __pycache__/
 
 # Node (prettier pre-commit hook)
 node_modules/
+
+# Coverage artifacts
+*.profraw
+lcov.info
