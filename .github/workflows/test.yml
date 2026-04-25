@@ -44,6 +44,18 @@ jobs:
       - name: Sync dev dependencies
         run: uv sync --extra dev --frozen --no-install-project
 
+      - name: Configure Windows Defender exclusions
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          Add-MpPreference -ExclusionPath $env:WORKSPACE
+          Add-MpPreference -ExclusionProcess "cargo.exe"
+          Add-MpPreference -ExclusionProcess "rustc.exe"
+          Add-MpPreference -ExclusionProcess "shame.exe"
+          Add-MpPreference -ExclusionProcess "link.exe"
+
       - name: Cargo build
         run: cargo build --verbose
 
@@ -51,4 +63,4 @@ jobs:
         run: cargo test --verbose
 
       - name: Pytest integration tests
-        run: uv run pytest tests/ -v
+        run: uv run pytest tests/ -v -n auto
