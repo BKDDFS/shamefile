@@ -1,3 +1,6 @@
+import sys
+
+import pytest
 import yaml
 from conftest import run_shamefile
 
@@ -32,6 +35,10 @@ def test_symlink_to_file_not_followed(tmp_path):
     assert not any("link.py" in loc for loc in locations)
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="POSIX chmod(0o000) has no effect on Windows; needs ACL-based equivalent",
+)
 def test_permission_denied_file_skipped_with_warning(tmp_path):
     """Unreadable files are skipped gracefully with a warning on stderr."""
     ok = tmp_path / "ok.py"
