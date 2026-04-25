@@ -45,11 +45,7 @@ jobs:
         run: uv sync --extra dev --frozen --no-install-project
 
       - name: Collect coverage from unit + integration tests
-        # All coverage steps live in one bash script so the env vars set by
-        # `cargo llvm-cov show-env --sh` (RUSTFLAGS, LLVM_PROFILE_FILE, ...)
-        # propagate cleanly via `eval`. Routing through $GITHUB_ENV breaks:
-        # show-env emits values single-quoted as shell syntax, but Actions
-        # parses $GITHUB_ENV literally and the quotes become part of the value.
+        # Keep as one step: show-env quotes values for shell, $GITHUB_ENV would mangle them.
         shell: bash
         run: |
           set -euo pipefail
