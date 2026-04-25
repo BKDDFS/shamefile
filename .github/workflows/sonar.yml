@@ -45,7 +45,10 @@ jobs:
         run: uv sync --extra dev --frozen --no-install-project
 
       - name: Export llvm-cov environment
-        run: cargo llvm-cov show-env --export-prefix >> "$GITHUB_ENV"
+        # show-env (without --sh) emits KEY=VALUE lines suitable for $GITHUB_ENV.
+        # The --sh / --export-prefix variant prepends `export `, which would
+        # leave RUSTFLAGS / LLVM_PROFILE_FILE unset under GitHub Actions parsing.
+        run: cargo llvm-cov show-env >> "$GITHUB_ENV"
 
       - name: Clean previous coverage data
         run: cargo llvm-cov clean --workspace

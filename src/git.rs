@@ -117,6 +117,23 @@ fn parse_renames(text: &str) -> std::collections::HashMap<String, String> {
     renames
 }
 
+fn get_git_config(key: &str, repo_path: &Path) -> Option<String> {
+    let output = Command::new("git")
+        .arg("config")
+        .arg("--get")
+        .arg(key)
+        .current_dir(repo_path)
+        .output()
+        .ok()?;
+
+    if output.status.success() {
+        let val = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if val.is_empty() { None } else { Some(val) }
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -167,22 +184,5 @@ mod tests {
             parse_git_root_stdout("/repo/root\n"),
             Some(PathBuf::from("/repo/root"))
         );
-    }
-}
-
-fn get_git_config(key: &str, repo_path: &Path) -> Option<String> {
-    let output = Command::new("git")
-        .arg("config")
-        .arg("--get")
-        .arg(key)
-        .current_dir(repo_path)
-        .output()
-        .ok()?;
-
-    if output.status.success() {
-        let val = String::from_utf8_lossy(&output.stdout).trim().to_string();
-        if val.is_empty() { None } else { Some(val) }
-    } else {
-        None
     }
 }
