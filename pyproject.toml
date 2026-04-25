@@ -14,7 +14,7 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "pre-commit>=2.21.0",
+    "pre-commit>=4.6.0",
 ]
 
 [project.optional-dependencies]
