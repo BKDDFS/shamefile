@@ -1,0 +1,28 @@
+{
+  "name": "shamefile-linux-arm64",
+  "version": "0.0.0",
+  "description": "shamefile binary for linux-arm64. Installed automatically via the `shamefile` package.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BKDDFS/shamefile.git"
+  },
+  "homepage": "https://github.com/BKDDFS/shamefile#readme",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "libc": [
+    "glibc"
+  ],
+  "files": [
+    "bin/shame"
+  ],
+  "preferUnplugged": true,
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}

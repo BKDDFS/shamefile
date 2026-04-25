@@ -1,0 +1,45 @@
+{
+  "name": "shamefile",
+  "version": "0.0.0",
+  "description": "Turn linter suppressions from silent technical debt into reviewable, documented decisions.",
+  "license": "Apache-2.0",
+  "author": "Bartlomiej Flis <bartekdawidflis@gmail.com>",
+  "homepage": "https://github.com/BKDDFS/shamefile#readme",
+  "bugs": "https://github.com/BKDDFS/shamefile/issues",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BKDDFS/shamefile.git"
+  },
+  "keywords": [
+    "cli",
+    "linter",
+    "suppressions",
+    "code-quality",
+    "technical-debt",
+    "pre-commit"
+  ],
+  "bin": {
+    "shame": "bin/shame.js"
+  },
+  "files": [
+    "bin/shame.js",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=16"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "optionalDependencies": {
+    "shamefile-linux-x64": "0.0.0",
+    "shamefile-linux-arm64": "0.0.0",
+    "shamefile-linux-x64-musl": "0.0.0",
+    "shamefile-linux-arm64-musl": "0.0.0",
+    "shamefile-darwin-x64": "0.0.0",
+    "shamefile-darwin-arm64": "0.0.0",
+    "shamefile-win32-x64": "0.0.0",
+    "shamefile-win32-arm64": "0.0.0"
+  }
+}

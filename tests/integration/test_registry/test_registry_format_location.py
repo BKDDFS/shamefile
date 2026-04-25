@@ -1,3 +1,6 @@
+import sys
+
+import pytest
 import yaml
 from conftest import run_shamefile
 
@@ -45,6 +48,10 @@ def test_entry_location_with_spaces_in_path(tmp_path):
     assert "my project/sub dir/my file.py:1" in entry["location"]
 
 
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="Windows forbids ':' in directory names (WinError 267)",
+)
 def test_entry_location_with_colon_in_path(tmp_path):
     """Location should handle colons in directory names (rsplit_once splits on last colon)."""
     colon_dir = tmp_path / "src" / "foo:bar"

@@ -23,24 +23,38 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: "1.95.0"
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32
+        uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.14"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@cec208311dfd045dd5311c1add060b2062131d57
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
       - name: Sync dev dependencies
         run: uv sync --extra dev --frozen --no-install-project
+
+      - name: Configure Windows Defender exclusions
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          WORKSPACE: ${{ github.workspace }}
+        run: |
+          Add-MpPreference -ExclusionPath $env:WORKSPACE
+          Add-MpPreference -ExclusionProcess "cargo.exe"
+          Add-MpPreference -ExclusionProcess "rustc.exe"
+          Add-MpPreference -ExclusionProcess "shame.exe"
+          Add-MpPreference -ExclusionProcess "link.exe"
 
       - name: Cargo build
         run: cargo build --verbose
@@ -49,4 +63,4 @@ jobs:
         run: cargo test --verbose
 
       - name: Pytest integration tests
-        run: uv run pytest tests/ -v
+        run: uv run pytest tests/ -v -n auto
