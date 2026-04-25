@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "shamefile"
-version = "0.1.0-rc.1"
+dynamic = ["version"]
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 description = "A cli tool to enforce documentation for code suppressions"

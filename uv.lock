@@ -361,7 +361,6 @@ wheels = [
 
 [[package]]
 name = "shamefile"
-version = "0.1.0rc1"
 source = { editable = "." }
 dependencies = [
     { name = "pre-commit" },
