@@ -26,7 +26,7 @@ chrono = { version = "0.4.43", features = ["serde", "clock"] }
 clap = { version = "4.5.57", features = ["derive"] }
 ignore = "0.4.25"
 regex = "1.12.3"
-regex-syntax = "0.8.9"
+regex-syntax = "0.8.10"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_yaml = "0.9.34"
 thiserror = "2.0.18"
