@@ -111,7 +111,7 @@ entries:
 - `location` and `token` form the entry's identity.
 - `content` is the verbatim source line — used for reconciliation when code moves.
 - `owner` and `created_at` are populated automatically on first run via `git blame`.
-- `why` is the only field you fill in by hand.
+- `why` is the only field that requires a written justification — from a developer or an AI agent. The PR reviewer decides whether the reason is good enough.
 
 ## Cascade matching
 
@@ -142,6 +142,18 @@ Renaming a file, reformatting a function, or inserting imports above a suppressi
 | `// tslint:disable`, `/* tslint:disable` | TSLint | TS / TSX |
 | `// @ts-ignore`, `/* @ts-ignore` | TypeScript | JS / TS / TSX |
 | `// @ts-expect-error`, `/* @ts-expect-error` | TypeScript | JS / TS / TSX |
+
+### Experimental tokens
+
+New languages added via the [*Add a language*](.github/ISSUE_TEMPLATE/language_request.md)
+template land here first. They have passed the existing test suite and
+a sanity run on a real codebase, but no real-world showcase has been
+contributed yet. Promotion to *Supported tokens* happens through the
+[*Verify and release a language*](.github/ISSUE_TEMPLATE/showcase_request.md) flow.
+
+| Language |
+|---|
+| |
 
 Supported file extensions: `.py`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`.
 
@@ -174,4 +186,12 @@ Or as a [pre-commit](https://pre-commit.com) hook:
 
 ## Contributing
 
-**Missing a token for your linter?** [Open an issue](https://github.com/BKDDFS/shamefile/issues) first — let's agree on scope before you write code.
+Contributions are welcome. Where you start depends on what you have:
+
+- **Found a bug?** [Open an issue](https://github.com/BKDDFS/shamefile/issues/new/choose) with a minimal repro.
+- **Idea or design question?** Open a [Discussion under Ideas](https://github.com/BKDDFS/shamefile/discussions/categories/ideas) so direction can be agreed before any code is written.
+- **Usage question or trouble setting things up?** Ask in [Q&A](https://github.com/BKDDFS/shamefile/discussions/categories/q-a).
+- **Want to send a PR?** Read [CONTRIBUTING.md](CONTRIBUTING.md) first — dev setup, build/test/lint commands, commit format.
+- **Security vulnerability?** Use the private [advisory form](https://github.com/BKDDFS/shamefile/security/advisories/new) — see [SECURITY.md](SECURITY.md). **Do not** open a public issue.
+
+By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).

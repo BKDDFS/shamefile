@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Ideas / design discussions
+    url: https://github.com/BKDDFS/shamefile/discussions/categories/ideas
+    about: Open-ended ideas, design questions, "should we do X?"
+  - name: Q&A
+    url: https://github.com/BKDDFS/shamefile/discussions/categories/q-a
+    about: Usage questions and troubleshooting help.
+  - name: Security vulnerability
+    url: https://github.com/BKDDFS/shamefile/security/advisories/new
+    about: Report a security issue privately. Do NOT open a public issue.

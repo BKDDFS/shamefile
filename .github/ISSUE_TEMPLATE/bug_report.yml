@@ -1,0 +1,75 @@
+name: Bug report
+description: Something is broken or behaves incorrectly.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill in every
+        section — bug reports without repro steps and a version are very
+        hard to act on.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What went wrong, in one or two sentences.
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal commands and inputs that reproduce the bug.
+      placeholder: |
+        1. Run `shame me .` in a fresh repo
+        2. Edit shamefile.yaml as follows: ...
+        3. Run `shame check .`
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: Include relevant output, error messages, or stack traces.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: shame version
+      description: Output of `shame --version`.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other (please describe in summary)
+    validations:
+      required: true
+
+  - type: input
+    id: install
+    attributes:
+      label: Install method
+      description: cargo, npm, pip, from source, ...
+      placeholder: "cargo install shame"
+    validations:
+      required: true
