@@ -174,4 +174,12 @@ Or as a [pre-commit](https://pre-commit.com) hook:
 
 ## Contributing
 
-**Missing a token for your linter?** [Open an issue](https://github.com/BKDDFS/shamefile/issues) first — let's agree on scope before you write code.
+Contributions are welcome. Where you start depends on what you have:
+
+- **Found a bug?** [Open an issue](https://github.com/BKDDFS/shamefile/issues/new/choose) with a minimal repro.
+- **Idea or design question?** Open a [Discussion under Ideas](https://github.com/BKDDFS/shamefile/discussions/categories/ideas) so direction can be agreed before any code is written.
+- **Usage question or trouble setting things up?** Ask in [Q&A](https://github.com/BKDDFS/shamefile/discussions/categories/q-a).
+- **Want to send a PR?** Read [CONTRIBUTING.md](CONTRIBUTING.md) first — dev setup, build/test/lint commands, commit format.
+- **Security vulnerability?** Use the private [advisory form](https://github.com/BKDDFS/shamefile/security/advisories/new) — see [SECURITY.md](SECURITY.md). **Do not** open a public issue.
+
+By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
