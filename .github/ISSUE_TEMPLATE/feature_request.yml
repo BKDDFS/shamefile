@@ -1,0 +1,44 @@
+name: Feature request
+description: Propose a concrete, scoped enhancement.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For open-ended ideas or design questions, please open a
+        [Discussion under Ideas](https://github.com/BKDDFS/shamefile/discussions/categories/ideas)
+        instead. Use this template only when the proposal is concrete
+        enough to act on.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem does this feature solve? Who is affected?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: What should the tool do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you considered, or workarounds you tried.
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope check
+      description: |
+        Does this fit within shamefile's stated scope (detect linter
+        suppressions, demand justification, gate CI)? If not, link the
+        Discussion where direction was agreed.
+    validations:
+      required: true
