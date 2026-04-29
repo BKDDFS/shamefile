@@ -2,7 +2,7 @@
 name: Add a language
 about: Track adding support for a new language. Tick boxes as you go.
 title: "lang: add support for <language>"
-labels: ["enhancement", "language"]
+labels: ["enhancement", "language", "good first issue"]
 ---
 
 Adding a language to shamefile is mechanical. Tick each box as you
@@ -12,6 +12,22 @@ complete it, then link the PR with `Closes #<this-issue>`.
 > first contribution and we keep this opportunity open for new
 > contributors. If you have already had a language PR merged, please do
 > not open another one.
+
+## Tiers
+
+Language support has two tiers:
+
+- **`experimental`** — sanity-tested and merged into shamefile. Listed
+  in the README's *Experimental* table. The checklist below
+  covers this tier and is the well-scoped first contribution this
+  template is about.
+- **`released`** — promoted to the README's main *Supported tokens*
+  table after a matching showcase entry lands in
+  [`shamefile-showcase`](https://github.com/BKDDFS/shamefile-showcase).
+  Optional follow-up tracked in a **separate issue and PR** — after
+  merging this issue's PR, open a new issue using the *Verify and release a language*
+  template if you want to pursue `released`. Do not bundle showcase
+  work into this issue or PR.
 
 ## Language
 
@@ -81,6 +97,17 @@ findings so a maintainer can decide whether to keep it open or close it.
 - [ ] `cargo test` passes locally.
 - [ ] `cargo clippy --all-targets --all-features -- -D warnings` passes.
 - [ ] **Sanity check on a real codebase** — exercise the new language end-to-end against unfamiliar code. Steps:
+
+  > **Tip — pick a popular project here and you can fast-track to
+  > `released`.** If the project you clone for the sanity check is one
+  > you would be willing to showcase, fork it under your own account
+  > (instead of, or in addition to, the throwaway clone). After this
+  > issue's PR is merged you can reuse that same fork for the
+  > *Verify and release a language* flow without rerunning shamefile on a different
+  > project, and the language jumps from *Experimental tokens* to
+  > *Supported tokens* in the next promotion PR rather than sitting at
+  > `experimental` indefinitely.
+
   1. Build a release binary with your changes:
      ```sh
      cargo build --release
@@ -109,9 +136,24 @@ findings so a maintainer can decide whether to keep it open or close it.
   > tracker first asking whether they want it. Unsolicited setup PRs
   > are noise for maintainers.
 - [ ] [README](../blob/main/README.md) updated with the new language. Specifically:
-  - Add a row per token to the **Supported tokens** table, matching the format of the existing Python / JavaScript / TypeScript rows (token in backticks, source tool, language column with the new language name).
+  - Add a single row with the language name to the **Experimental tokens** table. New languages start under *Experimental tokens*; promotion to *Supported tokens* (with full token / tool rows) happens via a separate showcase PR.
   - Add the file extension(s) to the **Supported file extensions** list.
   - Keep alphabetical / logical grouping consistent with existing entries.
+
+## After merge
+
+This issue ends at `experimental` and will be closed by the merging
+PR. The next step toward `released` is a **separate** issue using the
+*Verify and release a language* template — it is itself a good-first-issue, open to
+any contributor (not just you), and tracks forking a representative
+project, running shamefile against it, and merging the result into
+[`shamefile-showcase`](https://github.com/BKDDFS/shamefile-showcase).
+Do not extend this PR to cover that work.
+
+If you took the tip in the sanity-check step and used a popular
+project (forked under your account), you have a head start on the
+showcase issue and may want to claim it yourself before someone else
+does — but the issue is open to anyone.
 
 ## Notes
 

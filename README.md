@@ -111,7 +111,7 @@ entries:
 - `location` and `token` form the entry's identity.
 - `content` is the verbatim source line — used for reconciliation when code moves.
 - `owner` and `created_at` are populated automatically on first run via `git blame`.
-- `why` is the only field you fill in by hand.
+- `why` is the only field that requires a written justification — from a developer or an AI agent. The PR reviewer decides whether the reason is good enough.
 
 ## Cascade matching
 
@@ -142,6 +142,18 @@ Renaming a file, reformatting a function, or inserting imports above a suppressi
 | `// tslint:disable`, `/* tslint:disable` | TSLint | TS / TSX |
 | `// @ts-ignore`, `/* @ts-ignore` | TypeScript | JS / TS / TSX |
 | `// @ts-expect-error`, `/* @ts-expect-error` | TypeScript | JS / TS / TSX |
+
+### Experimental tokens
+
+New languages added via the [*Add a language*](.github/ISSUE_TEMPLATE/language_request.md)
+template land here first. They have passed the existing test suite and
+a sanity run on a real codebase, but no real-world showcase has been
+contributed yet. Promotion to *Supported tokens* happens through the
+[*Verify and release a language*](.github/ISSUE_TEMPLATE/showcase_request.md) flow.
+
+| Language |
+|---|
+| |
 
 Supported file extensions: `.py`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`.
 
