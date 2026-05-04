@@ -6,7 +6,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_dry_run.py:129
     token: '# type: ignore'
     content: '# - undocumented (# type: ignore not in registry)'
-    created_at: 2026-05-04T19:25:58.105561Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Descriptive text inside a test comment listing failure cases — not an
@@ -15,7 +15,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_encoding.py:15
     token: '# noqa'
     content: 'assert entries[0]["token"] == "# noqa"  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.120905Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -24,7 +24,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_encoding.py:28
     token: '# noqa'
     content: 'assert entries[0]["token"] == "# noqa"  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.137991Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -33,7 +33,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_format_fields.py:20
     token: '# noqa'
     content: 'assert single_entry["token"] == "# noqa"  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.154863Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -42,7 +42,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_ordering.py:7
     token: '# noqa'
     content: 'token="# noqa",  # noqa: S107'
-    created_at: 2026-05-04T19:25:58.169397Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S107 false positive: default arg `token=` is a linter suppression
@@ -51,7 +51,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_ordering.py:77
     token: '# type: ignore'
     content: '# Manually create registry with # type: ignore before'
-    created_at: 2026-05-04T19:25:58.185755Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Descriptive text inside a test comment — not an active mypy directive
@@ -60,7 +60,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_ordering.py:83
     token: '# noqa'
     content: 'token="# type: ignore",  # noqa: S106'
-    created_at: 2026-05-04T19:25:58.200521Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S106 false positive: keyword arg `token=` carries a linter
@@ -69,7 +69,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_ordering.py:89
     token: '# noqa'
     content: 'token="# noqa",  # noqa: S106'
-    created_at: 2026-05-04T19:25:58.215772Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S106 false positive: keyword arg `token=` carries a linter
@@ -78,7 +78,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_shame_vector.py:122
     token: '# noqa'
     content: 'noqa_entry = next(e for e in entries if e["token"] == "# noqa")  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.230611Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -87,7 +87,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_shame_vector.py:123
     token: '# noqa'
     content: 'type_ignore_entry = next(e for e in entries if e["token"] == "# type: ignore")  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.245716Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -96,7 +96,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_tracking.py:65
     token: '# noqa'
     content: 'assert type_ignore_entry["token"] == "# type: ignore"  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.260904Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -105,7 +105,7 @@ entries:
   - location: ./e2e_tests/test_registry/test_registry_tracking.py:149
     token: '# noqa'
     content: 'assert entries[0]["token"] == "# noqa"  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.277291Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -114,7 +114,7 @@ entries:
   - location: ./e2e_tests/test_shame_fix.py:22
     token: '# noqa'
     content: 'type_ignore = next(e for e in entries if e["token"] == "# type: ignore")  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.290890Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -123,7 +123,7 @@ entries:
   - location: ./e2e_tests/test_shame_fix.py:34
     token: '# noqa'
     content: 'noqa = next(e for e in entries if e["token"] == "# noqa")  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.303204Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -132,7 +132,7 @@ entries:
   - location: ./e2e_tests/test_shame_next.py:157
     token: '# noqa'
     content: 'assert entries[0]["token"] == "# noqa"  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.318687Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -141,7 +141,7 @@ entries:
   - location: ./e2e_tests/test_token_detection/test_common.py:16
     token: '# noqa'
     content: 'assert any(e["token"] == "# noqa" for e in registry["entries"])  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.334925Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -150,7 +150,7 @@ entries:
   - location: ./e2e_tests/test_token_detection/test_common.py:44
     token: '# noqa'
     content: 'assert any(e["token"] == "nosec" for e in registry["entries"])  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.352059Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -159,7 +159,7 @@ entries:
   - location: ./e2e_tests/test_token_detection/test_common.py:69
     token: '# noqa'
     content: 'assert any(e["token"] == "# noqa" for e in registry["entries"])  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.369602Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -168,7 +168,7 @@ entries:
   - location: ./e2e_tests/test_token_detection/test_python_token_detection.py:40
     token: '# noqa'
     content: 'assert any(e["token"] == "# noqa" for e in registry["entries"])  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.382735Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter
@@ -177,7 +177,7 @@ entries:
   - location: ./e2e_tests/test_token_detection/test_python_token_detection.py:52
     token: '# noqa'
     content: 'assert any(e["token"] == "# noqa" for e in registry["entries"])  # noqa: S105'
-    created_at: 2026-05-04T19:25:58.395659Z
+    created_at: 2026-05-04
     owner: Bartlomiej Flis <bartekdawidflis@gmail.com>
     why: >-
       Bandit S105 false positive: dict key 'token' compared with a linter

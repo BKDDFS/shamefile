@@ -28,7 +28,10 @@ pub struct Entry {
     pub location: String,
     pub token: String,
     pub content: String,
-    #[serde(deserialize_with = "deserialize_created_at")]
+    #[serde(
+        deserialize_with = "deserialize_created_at",
+        serialize_with = "serialize_created_at"
+    )]
     pub created_at: DateTime<Utc>,
     pub owner: String,
     #[serde(deserialize_with = "deserialize_why")]
@@ -51,6 +54,13 @@ where
     Err(serde::de::Error::custom(format!(
         "invalid created_at: '{s}' — expected RFC 3339 (e.g. '2024-01-15T00:00:00Z') or date (e.g. '2024-01-15')"
     )))
+}
+
+fn serialize_created_at<S>(dt: &DateTime<Utc>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    serializer.serialize_str(&dt.format("%Y-%m-%d").to_string())
 }
 
 fn deserialize_why<'de, D>(deserializer: D) -> Result<String, D::Error>
