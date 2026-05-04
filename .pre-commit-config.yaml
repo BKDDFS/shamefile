@@ -25,8 +25,8 @@ repos:
         pass_filenames: false
         types: [rust]
       - id: pytest
-        name: pytest (integration)
-        entry: bash -c 'cargo build && uv run pytest tests/'
+        name: pytest (e2e)
+        entry: bash -c 'cargo build && uv run pytest e2e_tests/'
         language: system
         pass_filenames: false
         always_run: true

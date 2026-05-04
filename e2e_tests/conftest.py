@@ -12,7 +12,7 @@ from pathlib import Path
 for _k in [k for k in os.environ if k.startswith("GIT_")]:
     del os.environ[_k]
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent
 LANGUAGES_RS_PATH = PROJECT_ROOT / "src" / "languages.rs"
 BINARY_PATH = str(PROJECT_ROOT / "target" / "debug" / "shame")
 

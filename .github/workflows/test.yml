@@ -62,5 +62,5 @@ jobs:
       - name: Cargo test
         run: cargo test --verbose
 
-      - name: Pytest integration tests
-        run: uv run pytest tests/ -v -n auto
+      - name: Pytest e2e tests
+        run: uv run pytest e2e_tests/ -v -n auto

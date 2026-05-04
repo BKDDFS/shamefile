@@ -48,13 +48,13 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = [
+"e2e_tests/**" = [
     "S101",    # assert is fine in tests
     "ANN",     # no type annotations needed for tests
     "INP001",  # no __init__.py required for test dirs
     "D100",    # no module docstring needed for test files
     "D104",    # no package docstring needed for __init__.py
-    "S603",    # subprocess calls are intentional in integration tests
+    "S603",    # subprocess calls are intentional in e2e tests
     "S607",    # partial executable path (git, cargo) is fine in tests
 ]
 
