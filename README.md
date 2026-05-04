@@ -1,6 +1,8 @@
-<h1 align="center">
-  <img src="assets/logo.png" alt="shamefile logo" width="300">
-</h1>
+<img src="assets/logo.png" alt="shamefile logo" width="180" align="left">
+
+&nbsp;
+
+**Turn silent tech debt into reviewable and documented decisions.**
 
 [![Tests](https://github.com/BKDDFS/shamefile/actions/workflows/test.yml/badge.svg)](https://github.com/BKDDFS/shamefile/actions/workflows/test.yml)
 [![Lint](https://github.com/BKDDFS/shamefile/actions/workflows/lint.yml/badge.svg)](https://github.com/BKDDFS/shamefile/actions/workflows/lint.yml)
@@ -10,7 +12,7 @@
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/powered_by-Rust-b81414?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 
-> Turn linter suppressions from silent technical debt into reviewable, documented decisions.
+<br clear="left">
 
 **shamefile** is a CLI that scans your codebase for linter suppressions (`# noqa`, `// eslint-disable`, `// @ts-ignore`, and many more), consolidates them into a single registry, and fails the build until every one of them carries a written justification. Human authors and AI coding agents operate through the same interface.
 
