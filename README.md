@@ -14,9 +14,16 @@
 
 <br clear="left">
 
-**shamefile** is a CLI that scans your codebase for linter suppressions (`# noqa`, `// eslint-disable`, `// @ts-ignore`, and many more), consolidates them into a single registry, and fails the build until every one of them carries a written justification. Human authors and AI coding agents operate through the same interface.
+**shamefile** won't let anyone silence a linter warning in your code without writing down why.
 
-## Why shamefile
+People are lazy. Both committer and code reviewer.
+
+- The **committer** slaps a `// NOLINT` comment when there's no easy fix. They don't justify it — in most languages there's no good place for that.
+- The **code reviewer** focuses on more important things: security, bugs, design. There's no dedicated time for checking new suppression arrivals.
+
+Shamefile adds `shamefile.yaml` for the code reviewer and the `shame` CLI for the committer to give them tools to react before tech debt gets out of control.
+
+## Why it's important
 
 A mysterious `# noqa` with no explanation, left by a developer who moved on years ago. Nobody remembers why. Nobody wants to touch it. This is how legacy code accumulates — silently, one linter suppression at a time.
 
@@ -52,7 +59,7 @@ Run `shame next` to see the first one, or `shame next "<reason>"` to fill its wh
 ...
 ```
 
-**3. Developer documents it — one entry at a time:**
+**3. Developer documents it:**
 
 ```
 $ shame next
