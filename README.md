@@ -189,6 +189,14 @@ Or as a [pre-commit](https://pre-commit.com) hook:
     - id: shamefile
 ```
 
+## Show shamefile in your README
+
+[![shamefile](https://img.shields.io/badge/shamefile-on_board-b81414)](https://github.com/BKDDFS/shamefile)
+
+```markdown
+[![shamefile](https://img.shields.io/badge/shamefile-on_board-b81414)](https://github.com/BKDDFS/shamefile)
+```
+
 ## Roadmap
 
 - **MCP server** — native integration for LLM-based PR authors (avoids loading the full registry into agent context)
