@@ -13,12 +13,11 @@ authors = [
 ]
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = [
-    "pre-commit>=4.6.0",
-]
+dependencies = []
 
 [project.optional-dependencies]
 dev = [
+    "pre-commit>=4.6.0",
     "pytest>=9.0",
     "pytest-bdd>=7.0",
     "pytest-xdist>=3.0",
