@@ -64,3 +64,6 @@ jobs:
 
       - name: Pytest e2e tests
         run: uv run pytest e2e_tests/ -v -n auto
+
+      - name: Shame self-check
+        run: cargo run -- me . --dry-run
