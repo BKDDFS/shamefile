@@ -7,7 +7,6 @@
 [![CodeQL](https://github.com/BKDDFS/shamefile/actions/workflows/codeql.yml/badge.svg)](https://github.com/BKDDFS/shamefile/actions/workflows/codeql.yml)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=BKDDFS_shamefile&metric=coverage)](https://sonarcloud.io/summary/new_code?id=BKDDFS_shamefile)
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=BKDDFS_shamefile&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=BKDDFS_shamefile)
-[![Docs](https://img.shields.io/badge/docs-blue)](https://bkddfs.github.io/shamefile/)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/powered_by-Rust-b81414?logo=rust&logoColor=white)](https://www.rust-lang.org/)
 
@@ -44,9 +43,11 @@ result = parse_legacy_api(raw)  # type: ignore
 ```
 $ shame me .
 Scanning . for suppressions...
-Added 1 new entries to shamefile.yaml
+Added 1 new entries to /home/user/myproject/shamefile.yaml
 1 suppressions need documentation (why).
 Run `shame next` to see the first one, or `shame next "<reason>"` to fill its why.
+
+...
 ```
 
 **3. Developer documents it — one entry at a time:**
@@ -118,9 +119,9 @@ entries:
 A registry that breaks every time you refactor is worse than no registry. `shamefile` reconciles entries against source code in two passes:
 
 1. **Location match** — exact `file:line` + token.
-2. **Content match** — same source line + token (handles line shifts, with rename detection via `git`).
+2. **Content match** — same source line + token (handles line shifts, with rename detection limited to the most recent commit via `git diff HEAD~1..HEAD -M`).
 
-Renaming a file, reformatting a function, or inserting imports above a suppression all preserve the entry — `owner`, `created_at`, and `why` stay intact. Entries are only removed when the token itself is gone from the code.
+Reformatting a function or inserting imports above a suppression preserves the entry — `owner`, `created_at`, and `why` stay intact. Entries are only removed when the token itself is gone from the code.
 
 ## Supported tokens
 
@@ -166,6 +167,8 @@ Supported file extensions: `.py`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`.
 | **crates.io** | `cargo install shamefile` |
 | **From source** | `cargo install --git https://github.com/BKDDFS/shamefile` |
 | **Homebrew** | _coming soon_ |
+
+All channels install the `shame` CLI. Run `shame --help` to verify.
 
 Or as a [pre-commit](https://pre-commit.com) hook:
 

@@ -459,8 +459,12 @@ fn handle_normal(
         println!(
             "Run `shame next` to see the first one, or `shame next \"<reason>\"` to fill its why."
         );
+        println!();
         println!(
-            "Note for LLMs: avoid reading large shamefile.yaml! Use shamefile MCP. If not installed, run `shame mcp`."
+            "STOP — message for LLM agents: do NOT read shamefile.yaml directly. It grows large and will pollute your context for no benefit."
+        );
+        println!(
+            "Walk entries one at a time with `shame next`, or document a specific one via `shame fix <location> <token> --why \"<reason>\"`."
         );
     }
 
