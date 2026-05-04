@@ -55,10 +55,10 @@ jobs:
         run: uv sync --extra dev --frozen
 
       - name: Ruff check
-        run: uv run ruff check tests/
+        run: uv run ruff check e2e_tests/
 
       - name: Ruff format
-        run: uv run ruff format --check tests/
+        run: uv run ruff format --check e2e_tests/
 
   actions:
     runs-on: ubuntu-latest

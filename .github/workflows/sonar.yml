@@ -44,7 +44,7 @@ jobs:
       - name: Sync dev dependencies
         run: uv sync --extra dev --frozen --no-install-project
 
-      - name: Collect coverage from unit + integration tests
+      - name: Collect coverage from unit + e2e tests
         # Keep as one step: show-env quotes values for shell, $GITHUB_ENV would mangle them.
         shell: bash
         run: |
@@ -53,7 +53,7 @@ jobs:
           cargo llvm-cov clean --workspace
           cargo build --all-features --workspace
           cargo test --all-features --workspace
-          uv run pytest tests/ -n auto
+          uv run pytest e2e_tests/ -n auto
           cargo llvm-cov report --lcov --output-path lcov.info
 
       - name: SonarCloud Scan
