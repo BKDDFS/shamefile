@@ -200,7 +200,7 @@ def test_next_with_reason_advances_queue(tmp_path):
 
 
 # Reason content tests (apostrophe, colons, hashes, unicode, YAML keywords, numbers, URLs,
-# double quotes, percent) live in tests/integration/test_yaml_formatting.py (BDD).
+# double quotes, percent) live in e2e_tests/test_yaml_formatting.py (BDD).
 
 
 def test_next_rejects_empty_reason(tmp_path):

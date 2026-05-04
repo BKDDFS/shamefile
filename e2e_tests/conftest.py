@@ -2,7 +2,7 @@ import re
 import subprocess
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent
 LANGUAGES_RS_PATH = PROJECT_ROOT / "src" / "languages.rs"
 BINARY_PATH = str(PROJECT_ROOT / "target" / "debug" / "shame")
 
