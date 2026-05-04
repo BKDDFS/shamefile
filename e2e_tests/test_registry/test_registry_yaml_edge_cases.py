@@ -150,7 +150,8 @@ def test_wrong_type_in_field_exits_with_error(tmp_path):
 
 
 def test_non_utc_timezone_normalized_to_utc(tmp_path):
-    """Non-UTC timezone offset in created_at is parsed and normalized to UTC by chrono."""
+    """Non-UTC timezone offsets that cross midnight UTC are normalized to the UTC date."""
+    # 2024-01-16T02:00+05:30 → 2024-01-15T20:30Z, so the saved date should be 2024-01-15.
     (tmp_path / "test.py").write_text("x = 1  # noqa\n", encoding="utf-8")
     (tmp_path / "shamefile.yaml").write_text(
         "config: {}\n"
@@ -159,7 +160,7 @@ def test_non_utc_timezone_normalized_to_utc(tmp_path):
         "    token: '# noqa'\n"
         "    content: 'x = 1  # noqa'\n"
         "    owner: 'Alice'\n"
-        "    created_at: '2024-01-15T10:00:00+05:30'\n"
+        "    created_at: '2024-01-16T02:00:00+05:30'\n"
         "    why: 'Legacy'\n",
         encoding="utf-8",
     )
@@ -169,8 +170,7 @@ def test_non_utc_timezone_normalized_to_utc(tmp_path):
     assert result.returncode == 0
     saved = yaml.safe_load((tmp_path / "shamefile.yaml").read_text(encoding="utf-8"))
     created_at = str(saved["entries"][0]["created_at"])
-    assert "2024-01-15" in created_at
-    assert "04:30" in created_at
+    assert created_at == "2024-01-15"
 
 
 def test_yaml_anchor_merge_key_fails_with_clear_error(tmp_path):

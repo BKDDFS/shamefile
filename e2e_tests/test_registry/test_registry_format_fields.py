@@ -1,4 +1,4 @@
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 import yaml
@@ -31,12 +31,12 @@ def test_entry_has_empty_why_on_creation(single_entry):
 
 
 def test_entry_has_recent_created_at(single_entry):
-    """Entry created_at should be a recent UTC timestamp."""
+    """Entry created_at should be today's UTC date."""
     created_at = single_entry["created_at"]
-    now = datetime.now(UTC)
+    today = datetime.now(UTC).date()
 
-    assert isinstance(created_at, datetime)
-    assert now - created_at < timedelta(minutes=5)
+    assert isinstance(created_at, date)
+    assert today - created_at <= timedelta(days=1)
 
 
 def test_entry_has_content(single_entry):
