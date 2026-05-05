@@ -1,16 +1,7 @@
 [workspace]
-# GitHub Releases are the changelog
-changelog_update = false
+changelog_update = true
 git_release_enable = true
 git_release_draft = true
-git_release_body = """
-{% for group, group_commits in commits | group_by(attribute="group") %}
-### {{ group | upper_first }}
-{% for commit in group_commits %}
-- {% if commit.scope %}*({{ commit.scope }})* {% endif %}{% if commit.breaking %}[**breaking**] {% endif %}{{ commit.message | split(pat="\n") | first | upper_first }}
-{%- endfor %}
-{% endfor %}
-"""
 
 # publish-cargo.yml handles that
 publish = false

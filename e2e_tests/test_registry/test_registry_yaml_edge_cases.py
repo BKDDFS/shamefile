@@ -151,7 +151,6 @@ def test_wrong_type_in_field_exits_with_error(tmp_path):
 
 def test_non_utc_timezone_normalized_to_utc(tmp_path):
     """Non-UTC timezone offsets that cross midnight UTC are normalized to the UTC date."""
-    # 2024-01-16T02:00+05:30 → 2024-01-15T20:30Z, so the saved date should be 2024-01-15.
     (tmp_path / "test.py").write_text("x = 1  # noqa\n", encoding="utf-8")
     (tmp_path / "shamefile.yaml").write_text(
         "config: {}\n"
