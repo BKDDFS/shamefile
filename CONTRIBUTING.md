@@ -13,6 +13,10 @@ but please read this first so your time isn't wasted.
 - **Already-accepted work:** look for issues labeled `enhancement` or
   `bug`.
 
+Issues with an assignee are already being worked on. Pick an unassigned
+issue (especially those labeled `help wanted`), or comment on the issue
+to coordinate before starting non-trivial work.
+
 For non-trivial changes, please get agreement on the approach in the
 issue or discussion before opening a PR.
 

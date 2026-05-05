@@ -197,6 +197,32 @@ Or as a [pre-commit](https://pre-commit.com) hook:
 - **Custom git merge driver** — auto-resolve `shamefile.yaml` conflicts on parallel PRs
 - **Additional language grammars** — Rust, Go, Java, Kotlin, C# via tree-sitter
 - **Custom entry fields** — attach `ticket`, `reviewer`, or `deadline` metadata to suppressions
+- **Native exclusion config** — first-class `exclude:` patterns in `shamefile.yaml` for checked-in vendored or generated code that bypasses the default `.gitignore` discovery
+
+## FAQ
+
+**Why not just write the reason inline, like `# noqa: F401  # legacy import`?**
+
+- **Reviewers don't see it.** A `# noqa` buried in one of seven changed files rarely gets pushback. `shamefile.yaml` puts every suppression in the PR into one diff — the reviewer sees the full cost as a single list, with author and `why` per entry.
+- **Nothing forces a reason.** Linters accept any string after the token, or none. `shame me . --dry-run` fails the build until every entry has a non-empty `why`. This matters most for AI coding agents, which lose the suppression's context the moment the session ends — the registry forces them to write the reason to disk while it still exists.
+- **Inline is a bad trade-off.** A short reason carries no information; a useful one drowns the line of code it is attached to. The registry keeps source readable and justifications detailed.
+
+**What stops developers from writing `why: 'TODO'` and moving on?**
+
+The tool guarantees a string is written; the reviewer judges whether it is a real reason. If `why: 'TODO'` passes review, that is an organisational gap, not a tool gap — but the registry makes the gap visible: every lazy entry is one `grep` away, by author and date. Before `shamefile`, the same shortcut was hidden inside whichever file it lived in.
+
+**Won't `shamefile.yaml` become a merge conflict magnet on parallel PRs?**
+
+The registry is sorted by `(location, token)`, so suppressions added in unrelated parts of the codebase land in different regions of the file — most parallel PRs do not collide. When they do, `shame me` is idempotent: after a merge, running it on the resolved tree deterministically reconciles entries from source, so `git checkout --theirs shamefile.yaml && shame me .` is the escape hatch. A custom git merge driver that resolves automatically is on the Roadmap. This is the same trade-off every shared-file tool (lockfiles, changelogs, schema migrations) has accepted in exchange for single-source-of-truth visibility.
+
+**What about generated, vendored, or third-party code?**
+
+A repo's typical generated/vendored content is excluded for free:
+
+- `.gitignore` and `.ignore` files are respected (handled by the same engine `ripgrep` uses), so `node_modules/`, `target/`, `dist/`, `__pycache__/` etc. are skipped without configuration.
+- Only `.py / .js / .jsx / .mjs / .cjs / .ts / .tsx` are scanned, so vendored content in any other language is silently ignored.
+
+A first-class `exclude:` config in `shamefile.yaml` is on the [Roadmap](#roadmap).
 
 ## Contributing
 
