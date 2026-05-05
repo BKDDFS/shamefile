@@ -51,6 +51,7 @@ result = parse_legacy_api(raw)  # type: ignore
 
 ```
 $ shame me .
+Creating new registry at /home/user/myproject/shamefile.yaml
 Scanning . for suppressions...
 Added 1 new entries to /home/user/myproject/shamefile.yaml
 1 suppressions need documentation (why).
@@ -66,6 +67,7 @@ $ shame next
 ./src/api.py:42
     |
   42| result = parse_legacy_api(raw)  # type: ignore
+    |                                 ^^^^^^^^^^^^^^
 
 Fix with:
   shame next "<reason>"
@@ -113,7 +115,7 @@ entries:
 - location: ./src/api.py:42
   token: '# type: ignore'
   content: 'result = parse_legacy_api(raw)  # type: ignore'
-  created_at: 2026-04-17T21:15:05Z
+  created_at: 2026-04-17
   owner: Anna Nowak <anna@example.com>
   why: 'legacy API returns untyped dict; types module in progress'
 ```

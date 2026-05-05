@@ -2,7 +2,7 @@
 name = "shamefile"
 version = "0.1.2"
 edition = "2024"
-rust-version = "1.95"
+rust-version = "1.88"
 license = "Apache-2.0"
 description = "Turn linter suppressions from silent technical debt into reviewable, documented decisions."
 repository = "https://github.com/BKDDFS/shamefile"
