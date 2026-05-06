@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.4](https://github.com/BKDDFS/shamefile/compare/v0.1.3...v0.1.4) - 2026-05-06
+
+### Added
+
+- *(cli)* add `shame remove` command (closes #48) ([#64](https://github.com/BKDDFS/shamefile/pull/64))
+
 ## [0.1.3](https://github.com/BKDDFS/shamefile/compare/v0.1.2...v0.1.3) - 2026-05-05
 
 ### Fixed
