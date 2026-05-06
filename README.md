@@ -11,6 +11,7 @@
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=BKDDFS_shamefile&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=BKDDFS_shamefile)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/powered_by-Rust-b81414?logo=rust&logoColor=white)](https://www.rust-lang.org/)
+[![shamefile](https://img.shields.io/badge/tracked_with-shamefile-b81414)](https://github.com/BKDDFS/shamefile)
 
 <br clear="left">
 
@@ -35,7 +36,7 @@ A mysterious `# noqa` with no explanation, left by a developer who moved on year
 
 **Scan** — `shame me .` walks your project, finds every suppression token, and syncs the central `shamefile.yaml`. New suppressions are registered with auto-filled metadata (owner from `git blame`, timestamp, source line). Stale entries are removed. The command fails if any entry lacks a `why`.
 
-**Document** — `shame next` shows the first undocumented suppression, with the exact source line highlighted. Provide the reason inline (`shame next "<reason>"`), or target a specific entry with `shame fix <location> <token> --why "<reason>"`.
+**Document** — `shame next` shows the first undocumented suppression, with the exact source line highlighted. Provide the reason inline (`shame next "<reason>"`), or target a specific entry with `shame fix <location> <token> --why "<reason>"`. To delete a stale entry without editing the YAML by hand, use `shame remove <location> <token>` (alias `shame rm`).
 
 The same interface works for a developer opening a PR and for an AI agent iterating through gaps one at a time — without having to read the full registry into context.
 

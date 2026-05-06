@@ -135,6 +135,16 @@ enum Commands {
         #[arg(long)]
         why: String,
     },
+
+    /// Remove a specific suppression entry from the registry
+    #[command(alias = "rm")]
+    Remove {
+        /// Location (e.g. "./src/foo.py:42")
+        location: String,
+
+        /// Token (e.g. "# noqa")
+        token: String,
+    },
 }
 
 fn main() -> Result<()> {
@@ -157,6 +167,9 @@ fn main() -> Result<()> {
             why,
         } => {
             handle_fix(&location, &token, &why)?;
+        }
+        Commands::Remove { location, token } => {
+            handle_remove(&location, &token)?;
         }
     }
     Ok(())
@@ -738,6 +751,34 @@ fn handle_next(fix: Option<&str>) -> Result<()> {
             println!("{} more entries need documentation.", remaining - 1);
         }
     }
+
+    Ok(())
+}
+
+fn handle_remove(location: &str, token: &str) -> Result<()> {
+    let config_path = find_registry_path()?;
+    let mut registry = Registry::load(&config_path).context("Failed to load registry")?;
+
+    let entry_idx = registry
+        .entries
+        .iter()
+        .position(|e| e.location == location && e.token == token)
+        .ok_or_else(|| anyhow::anyhow!("No entry found for {} with token '{}'", location, token))?;
+
+    let removed = registry.entries.remove(entry_idx);
+
+    println!("Removed: {} at {}", removed.token, removed.location);
+
+    registry
+        .save(&config_path)
+        .context("Failed to save registry")?;
+
+    let remaining = registry
+        .entries
+        .iter()
+        .filter(|e| e.why.trim().is_empty())
+        .count();
+    print_remaining(remaining);
 
     Ok(())
 }
