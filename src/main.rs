@@ -1019,4 +1019,23 @@ mod tests {
             &registry_dir,
         ));
     }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn is_entry_in_scope_false_when_absolute_entry_outside_registry() {
+        // Absolute entry whose path is not under the registry directory.
+        // strip_registry_prefix's first attempt fails and the non-Windows
+        // fallback returns None, so the entry stays absolute and matches
+        // neither scanned_files nor any scan_path prefix.
+        let entry = entry("/elsewhere/foo.py:1", "# noqa", "");
+        let scan_paths = vec![PathBuf::from("src")];
+        let registry_dir = PathBuf::from("/repo");
+        assert!(!is_entry_in_scope(
+            &entry,
+            &HashSet::new(),
+            &HashSet::new(),
+            &scan_paths,
+            &registry_dir,
+        ));
+    }
 }
