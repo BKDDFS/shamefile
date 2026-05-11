@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.5](https://github.com/BKDDFS/shamefile/compare/v0.1.4...v0.1.5) - 2026-05-11
+
+### Fixed
+
+- normalize Windows absolute registry paths ([#70](https://github.com/BKDDFS/shamefile/pull/70))
+
+### Other
+
+- *(sonar)* skip scan for fork PRs ([#71](https://github.com/BKDDFS/shamefile/pull/71))
+- bump taiki-e/install-action from 2.75.29 to 2.77.3 ([#66](https://github.com/BKDDFS/shamefile/pull/66))
+- bump actions/dependency-review-action from 4.9.0 to 5.0.0 ([#67](https://github.com/BKDDFS/shamefile/pull/67))
+- bump github/codeql-action from 4.35.3 to 4.35.4 ([#68](https://github.com/BKDDFS/shamefile/pull/68))
+
 ## [0.1.4](https://github.com/BKDDFS/shamefile/compare/v0.1.3...v0.1.4) - 2026-05-06
 
 ### Added
