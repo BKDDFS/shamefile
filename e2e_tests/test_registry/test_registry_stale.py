@@ -1,7 +1,5 @@
 import subprocess
-import sys
 
-import pytest
 import yaml
 from conftest import BINARY_PATH, run_shamefile
 
@@ -285,11 +283,6 @@ def test_absolute_path_entry_detected_as_stale(tmp_path):
     assert "Removing stale entry" in result.stdout
 
 
-@pytest.mark.skipif(
-    sys.platform == "win32",
-    reason="Windows extended-length path prefix (\\\\?\\) breaks strip_prefix in "
-    "is_entry_in_scope. Tracked in https://github.com/BKDDFS/shamefile/issues/10",
-)
 def test_absolute_path_entry_stale_with_scoped_scan(tmp_path):
     """Entry with absolute path should be stale when its file is under a scanned subdir."""
     src = tmp_path / "src"
