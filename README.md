@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/v1.1.jpg" alt="shamefile — force to document silenced linter" width="1280">
+</p>
+
 <img src="assets/logo.png" alt="shamefile logo" width="180" align="left">
 
 &nbsp;
@@ -11,7 +15,7 @@
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=BKDDFS_shamefile&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=BKDDFS_shamefile)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/powered_by-Rust-b81414?logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![shamefile](https://img.shields.io/badge/tracked_with-shamefile-b81414)](https://github.com/BKDDFS/shamefile)
+[![shamefile](https://img.shields.io/badge/tracked_with-shamefile-fe3434)](https://github.com/BKDDFS/shamefile)
 
 <br clear="left">
 
@@ -24,62 +28,73 @@ People are lazy. Both committer and code reviewer.
 
 Shamefile adds `shamefile.yaml` for the code reviewer and the `shame` CLI for the committer to give them tools to react before tech debt gets out of control.
 
+## How it works
+
+### We have 5 demo files with code:
+
+<p align="center">
+  <img src="assets/code-python.png" alt="Python suppression" width="49%" />
+  <img src="assets/code-javascript.png" alt="JavaScript suppression" width="49%" />
+</p>
+<p align="center">
+  <img src="assets/code-csharp.png" alt="C# suppression" width="49%" />
+  <img src="assets/code-java.png" alt="Java suppression" width="49%" />
+</p>
+<p align="center">
+  <img src="assets/code-go.png" alt="Go suppression" width="49%" />
+</p>
+
+
+### Init empty shamefile with `shame me .`
+
+<p align="center">
+  <img src="assets/ci-failed.jpg" alt="CI failed: found undocumented suppressions" width="80%" />
+</p>
+
+
+<p align="center">
+  <img src="assets/shamefile-empty.png" alt="shamefile.yaml with empty why fields" width="40%" />
+</p>
+
+
+### Fill empty `why` with `shame next`
+
+<p align="center">
+  <img src="assets/shamefile-filled.png" alt="shamefile.yaml with documented why fields" width="50%" />
+</p>
+
+### Run again via CI with `shame me . --dry-run`
+
+<p align="center">
+  <img src="assets/ci-passed.jpg" alt="CI passed: every suppression documented" width="80%" />
+</p>
+
+<p align="center">
+  <img src="assets/arrow.jpg" alt="" width="80%" />
+</p>
+
+<p align="center">
+  <img src="assets/code-review.jpg" alt="Reviewer rejects a weak justification on a shamefile entry" width="80%" />
+</p>
+
 ## Why it's important
 
 A mysterious `# noqa` with no explanation, left by a developer who moved on years ago. Nobody remembers why. Nobody wants to touch it. This is how legacy code accumulates — silently, one linter suppression at a time.
 
 `shamefile` interrupts that pattern. Every suppression is tracked in a single `shamefile.yaml` — one file, one purpose. When it changes in a pull request, a reviewer sees the full cost of a shortcut in a single diff. And as AI coding agents become routine PR authors, the registry acts as a consistent gate: whether a suppression was introduced by a human or a model, it ships with a written justification or it doesn't ship at all.
 
-## How it works
+## Commands
 
-`shamefile` exposes two stages, one command each.
+| Command | What it does |
+|---|---|
+| `shame me .` | Scan project, sync `shamefile.yaml`; fail if any entry lacks `why` |
+| `shame me . --dry-run` | CI mode — read-only validation, never writes to disk |
+| `shame next` | Show first undocumented entry with the source line highlighted |
+| `shame next "<reason>"` | Document the first undocumented entry inline |
+| `shame fix <location> <token> --why "<reason>"` | Document a specific entry |
+| `shame remove <location> <token>` (alias `shame rm`) | Delete a stale entry without editing the YAML by hand |
 
-**Scan** — `shame me .` walks your project, finds every suppression token, and syncs the central `shamefile.yaml`. New suppressions are registered with auto-filled metadata (owner from `git blame`, timestamp, source line). Stale entries are removed. The command fails if any entry lacks a `why`.
-
-**Document** — `shame next` shows the first undocumented suppression, with the exact source line highlighted. Provide the reason inline (`shame next "<reason>"`), or target a specific entry with `shame fix <location> <token> --why "<reason>"`. To delete a stale entry without editing the YAML by hand, use `shame remove <location> <token>` (alias `shame rm`).
-
-The same interface works for a developer opening a PR and for an AI agent iterating through gaps one at a time — without having to read the full registry into context.
-
-## Workflow
-
-**1. Developer writes code with a suppression:**
-
-```python
-result = parse_legacy_api(raw)  # type: ignore
-```
-
-**2. Pre-commit (or manual) run surfaces the gap:**
-
-```
-$ shame me .
-Creating new registry at /home/user/myproject/shamefile.yaml
-Scanning . for suppressions...
-Added 1 new entries to /home/user/myproject/shamefile.yaml
-1 suppressions need documentation (why).
-Run `shame next` to see the first one, or `shame next "<reason>"` to fill its why.
-
-...
-```
-
-**3. Developer documents it:**
-
-```
-$ shame next
-./src/api.py:42
-    |
-  42| result = parse_legacy_api(raw)  # type: ignore
-    |                                 ^^^^^^^^^^^^^^
-
-Fix with:
-  shame next "<reason>"
-  shame fix "./src/api.py:42" "# type: ignore" --why "<reason>"
-
-$ shame next "legacy API returns untyped dict; types module in progress"
-Documented: # type: ignore at ./src/api.py:42
-All entries documented. No shame today!
-```
-
-**4. Developer commits both `api.py` and `shamefile.yaml`.** The shortcut and its justification land in the same PR, reviewable in a single diff.
+Run `shame --help` for the full reference.
 
 ## CI/CD integration
 
@@ -236,3 +251,7 @@ Contributions are welcome. Where you start depends on what you have:
 - **Security vulnerability?** Use the private [advisory form](https://github.com/BKDDFS/shamefile/security/advisories/new) — see [SECURITY.md](SECURITY.md). **Do not** open a public issue.
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+
+shamefile is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for more information.
