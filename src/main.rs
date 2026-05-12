@@ -73,10 +73,7 @@ fn is_entry_in_scope(
 ) -> bool {
     let entry_file_raw = PathBuf::from(entry.file());
     let entry_file = if entry_file_raw.is_absolute() {
-        entry_file_raw
-            .strip_prefix(registry_dir_canonical)
-            .map(|p| p.to_path_buf())
-            .unwrap_or(entry_file_raw)
+        strip_registry_prefix(&entry_file_raw, registry_dir_canonical).unwrap_or(entry_file_raw)
     } else {
         entry_file_raw
     };
@@ -88,6 +85,53 @@ fn is_entry_in_scope(
         scan_paths_canonical
             .iter()
             .any(|sp| entry_file.starts_with(sp))
+    }
+}
+
+fn strip_registry_prefix(path: &Path, registry_dir_canonical: &Path) -> Option<PathBuf> {
+    path.strip_prefix(registry_dir_canonical)
+        .map(|p| p.to_path_buf())
+        .ok()
+        .or_else(|| strip_registry_prefix_fallback(path, registry_dir_canonical))
+}
+
+#[cfg(windows)]
+fn strip_registry_prefix_fallback(path: &Path, registry_dir_canonical: &Path) -> Option<PathBuf> {
+    let path = strip_windows_verbatim_prefix(path);
+    let registry_dir = strip_windows_verbatim_prefix(registry_dir_canonical);
+    path.strip_prefix(registry_dir)
+        .map(|p| p.to_path_buf())
+        .ok()
+}
+
+#[cfg(not(windows))]
+fn strip_registry_prefix_fallback(_path: &Path, _registry_dir_canonical: &Path) -> Option<PathBuf> {
+    None
+}
+
+#[cfg(windows)]
+fn strip_windows_verbatim_prefix(path: &Path) -> PathBuf {
+    use std::path::{Component, Prefix};
+
+    let mut components = path.components();
+    if let Some(Component::Prefix(prefix)) = components.next() {
+        match prefix.kind() {
+            Prefix::VerbatimDisk(drive) => {
+                let mut normalized = PathBuf::from(format!("{}:", drive as char));
+                normalized.extend(components);
+                normalized
+            }
+            Prefix::VerbatimUNC(server, share) => {
+                let mut normalized = PathBuf::from(r"\\");
+                normalized.push(server);
+                normalized.push(share);
+                normalized.extend(components);
+                normalized
+            }
+            _ => path.to_path_buf(),
+        }
+    } else {
+        path.to_path_buf()
     }
 }
 
@@ -386,10 +430,7 @@ fn handle_normal(
         );
         let entry_file_raw = PathBuf::from(old.file());
         let entry_file_normalized = if entry_file_raw.is_absolute() {
-            entry_file_raw
-                .strip_prefix(registry_dir_canonical)
-                .map(|p| p.to_path_buf())
-                .unwrap_or(entry_file_raw)
+            strip_registry_prefix(&entry_file_raw, registry_dir_canonical).unwrap_or(entry_file_raw)
         } else {
             entry_file_raw
         };
@@ -950,10 +991,44 @@ mod tests {
         ));
     }
 
+    #[cfg(windows)]
+    #[test]
+    fn is_entry_in_scope_normalizes_windows_verbatim_registry_prefix() {
+        let entry = entry(r"C:\repo\src\deleted.py:1", "# noqa", "");
+        let scan_paths = vec![PathBuf::from("src")];
+        let registry_dir = PathBuf::from(r"\\?\C:\repo");
+        assert!(is_entry_in_scope(
+            &entry,
+            &HashSet::new(),
+            &HashSet::new(),
+            &scan_paths,
+            &registry_dir,
+        ));
+    }
+
     #[test]
     fn is_entry_in_scope_false_when_outside_scan_paths() {
         let entry = entry("./other/foo.py:1", "# noqa", "");
         let scan_paths = vec![PathBuf::from("./src")];
+        let registry_dir = PathBuf::from("/repo");
+        assert!(!is_entry_in_scope(
+            &entry,
+            &HashSet::new(),
+            &HashSet::new(),
+            &scan_paths,
+            &registry_dir,
+        ));
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn is_entry_in_scope_false_when_absolute_entry_outside_registry() {
+        // Absolute entry whose path is not under the registry directory.
+        // strip_registry_prefix's first attempt fails and the non-Windows
+        // fallback returns None, so the entry stays absolute and matches
+        // neither scanned_files nor any scan_path prefix.
+        let entry = entry("/elsewhere/foo.py:1", "# noqa", "");
+        let scan_paths = vec![PathBuf::from("src")];
         let registry_dir = PathBuf::from("/repo");
         assert!(!is_entry_in_scope(
             &entry,
