@@ -216,6 +216,8 @@ Reformatting a function or inserting imports above a suppression preserves the e
 
 ## Supported languages
 
+> **shamefile is language-agnostic by design.** The list below reflects what has been wired up and tested so far — not a limit on what the engine can do. If your language is missing and there's no [open issue](https://github.com/BKDDFS/shamefile/issues?q=is%3Aissue+label%3Alanguage) for it, please [open one](https://github.com/BKDDFS/shamefile/issues/new?template=language_request.md) so we know there's interest.
+
 | Token | Tool | Language |
 |---|---|---|
 | `# noqa` | Flake8 / Ruff | Python |
