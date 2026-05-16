@@ -40,7 +40,7 @@ Shamefile adds `shamefile.yaml` for the code reviewer and the `shame` CLI for th
 
 ## How it works
 
-### We have 5 demo files with code:
+### Five real suppressions across five languages:
 
 <p align="center">
   <img src="assets/code-python.png" alt="Python suppression" width="49%" />
