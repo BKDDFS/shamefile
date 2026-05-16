@@ -1,4 +1,8 @@
-<img src="assets/logo.png" alt="shamefile logo" width="180" align="left">
+<p align="center">
+  <img src="assets/banner.jpg" alt="shamefile — force to document silenced linter" width="1280">
+</p>
+
+<img src="assets/logo_beta.png" alt="shamefile logo" width="180" align="left">
 
 &nbsp;
 
@@ -11,9 +15,19 @@
 [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=BKDDFS_shamefile&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=BKDDFS_shamefile)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Rust](https://img.shields.io/badge/powered_by-Rust-b81414?logo=rust&logoColor=white)](https://www.rust-lang.org/)
-[![shamefile](https://img.shields.io/badge/tracked_with-shamefile-b81414)](https://github.com/BKDDFS/shamefile)
+[![shamefile](https://img.shields.io/badge/tracked_with-shamefile-fe3434)](https://github.com/BKDDFS/shamefile)
 
 <br clear="left">
+
+<p align="center">
+  <a href="#how-it-works">How it works</a> &nbsp;&bull;&nbsp;
+  <a href="#why-you-should-use-it">Why use it</a> &nbsp;&bull;&nbsp;
+  <a href="#installation">Installation</a> &nbsp;&bull;&nbsp;
+  <a href="#supported-languages">Supported languages</a> &nbsp;&bull;&nbsp;
+  <a href="#faq">FAQ</a> &nbsp;&bull;&nbsp;
+  <a href="#roadmap">Roadmap</a> &nbsp;&bull;&nbsp;
+  <a href="#contributing">Contributing</a>
+</p>
 
 **shamefile** won't let anyone silence a linter warning in your code without writing down why.
 
@@ -24,62 +38,127 @@ People are lazy. Both committer and code reviewer.
 
 Shamefile adds `shamefile.yaml` for the code reviewer and the `shame` CLI for the committer to give them tools to react before tech debt gets out of control.
 
-## Why it's important
-
-A mysterious `# noqa` with no explanation, left by a developer who moved on years ago. Nobody remembers why. Nobody wants to touch it. This is how legacy code accumulates — silently, one linter suppression at a time.
-
-`shamefile` interrupts that pattern. Every suppression is tracked in a single `shamefile.yaml` — one file, one purpose. When it changes in a pull request, a reviewer sees the full cost of a shortcut in a single diff. And as AI coding agents become routine PR authors, the registry acts as a consistent gate: whether a suppression was introduced by a human or a model, it ships with a written justification or it doesn't ship at all.
-
 ## How it works
 
-`shamefile` exposes two stages, one command each.
+### Five real suppressions across five languages:
 
-**Scan** — `shame me .` walks your project, finds every suppression token, and syncs the central `shamefile.yaml`. New suppressions are registered with auto-filled metadata (owner from `git blame`, timestamp, source line). Stale entries are removed. The command fails if any entry lacks a `why`.
+<p align="center">
+  <img src="assets/code-python.png" alt="Python suppression" width="49%" />
+  <img src="assets/code-javascript.png" alt="JavaScript suppression" width="49%" />
+</p>
+<p align="center">
+  <img src="assets/code-csharp.png" alt="C# suppression" width="49%" />
+  <img src="assets/code-java.png" alt="Java suppression" width="49%" />
+</p>
+<p align="center">
+  <img src="assets/code-go.png" alt="Go suppression" width="49%" />
+</p>
 
-**Document** — `shame next` shows the first undocumented suppression, with the exact source line highlighted. Provide the reason inline (`shame next "<reason>"`), or target a specific entry with `shame fix <location> <token> --why "<reason>"`. To delete a stale entry without editing the YAML by hand, use `shame remove <location> <token>` (alias `shame rm`).
 
-The same interface works for a developer opening a PR and for an AI agent iterating through gaps one at a time — without having to read the full registry into context.
+### Init empty shamefile with `shame me .`
 
-## Workflow
+<p align="center">
+  <img src="assets/ci-failed.jpg" alt="CI failed: found undocumented suppressions" width="80%" />
+</p>
 
-**1. Developer writes code with a suppression:**
 
-```python
-result = parse_legacy_api(raw)  # type: ignore
+<p align="center">
+  <img src="assets/shamefile-empty.png" alt="shamefile.yaml with empty why fields" width="40%" />
+</p>
+
+
+### Fill empty `why` with `shame next`
+
+<p align="center">
+  <img src="assets/shamefile-filled.png" alt="shamefile.yaml with documented why fields" width="50%" />
+</p>
+
+### Run again via CI with `shame me . --dry-run`
+
+<p align="center">
+  <img src="assets/ci-passed.jpg" alt="CI passed: every suppression documented" width="80%" />
+</p>
+
+<p align="center">
+  <img src="assets/arrow.jpg" alt="" width="80%" />
+</p>
+
+<p align="center">
+  <img src="assets/code-review.jpg" alt="Reviewer rejects a weak justification on a shamefile entry" width="80%" />
+</p>
+
+## Why you should use it
+
+<br>
+
+<img src="assets/benefit_ai.png" alt="Instantly improves AI agents" width="140" align="left" hspace="20">
+
+### Instantly improves AI agents
+<sub>Ignoring warnings? Not so easy anymore. Triggers AI reflection — "is this really unfixable?". Observed across Claude, GPT, and Cursor agents. Safer vibe coding by default.</sub>
+
+<br clear="left">
+
+<br>
+
+<img src="assets/benefit_single_source.png" alt="Single source of truth" width="140" align="right" hspace="20">
+
+### Single source of truth
+<sub>"Where to document?", "where to look?", "what to do?" — same answer to every question: `shamefile.yaml`.</sub>
+<br><br>
+<br clear="right">
+
+<br>
+
+<img src="assets/benefit_code_review.png" alt="Reviewable by design" width="115" align="left" hspace="20">
+
+### Reviewable by design
+<sub>Make suppression review a ritual, not goodwill.</sub>
+<br><br>
+<br clear="left">
+
+<br>
+
+<img src="assets/benefit_security.png" alt="Shamefile doesn't quit with ex-employees" width="115" align="right" hspace="20">
+
+### Shamefile doesn't quit with ex-employees
+<sub>Knowledge stays in the YAML and you can refactor with confidence.</sub>
+<br><br>
+<br clear="all">
+
+## Installation
+
+| Source | Command |
+|---|---|
+| **npm** | `npm install -g shamefile` |
+| **PyPI** | `pip install shamefile` |
+| **crates.io** | `cargo install shamefile` |
+| **From source** | `cargo install --git https://github.com/BKDDFS/shamefile` |
+| **Homebrew** | _coming soon_ |
+
+All channels install the `shame` CLI. Run `shame --help` to verify.
+
+Or as a [pre-commit](https://pre-commit.com) hook:
+
+```yaml
+# .pre-commit-config.yaml
+- repo: https://github.com/BKDDFS/shamefile
+  rev: main
+  hooks:
+    - id: shamefile
 ```
 
-**2. Pre-commit (or manual) run surfaces the gap:**
+## Commands
 
-```
-$ shame me .
-Creating new registry at /home/user/myproject/shamefile.yaml
-Scanning . for suppressions...
-Added 1 new entries to /home/user/myproject/shamefile.yaml
-1 suppressions need documentation (why).
-Run `shame next` to see the first one, or `shame next "<reason>"` to fill its why.
+| Command | What it does |
+|---|---|
+| `shame me .` | Scan project, sync `shamefile.yaml`; fail if any entry lacks `why` |
+| `shame me . --dry-run` | CI mode — read-only validation, never writes to disk |
+| `shame next` | Show first undocumented entry with the source line highlighted |
+| `shame next "<reason>"` | Document the first undocumented entry inline |
+| `shame fix <location> <token> --why "<reason>"` | Document a specific entry |
+| `shame remove <location> <token>` (alias `shame rm`) | Delete a stale entry without editing the YAML by hand |
 
-...
-```
-
-**3. Developer documents it:**
-
-```
-$ shame next
-./src/api.py:42
-    |
-  42| result = parse_legacy_api(raw)  # type: ignore
-    |                                 ^^^^^^^^^^^^^^
-
-Fix with:
-  shame next "<reason>"
-  shame fix "./src/api.py:42" "# type: ignore" --why "<reason>"
-
-$ shame next "legacy API returns untyped dict; types module in progress"
-Documented: # type: ignore at ./src/api.py:42
-All entries documented. No shame today!
-```
-
-**4. Developer commits both `api.py` and `shamefile.yaml`.** The shortcut and its justification land in the same PR, reviewable in a single diff.
+Run `shame --help` for the full reference.
 
 ## CI/CD integration
 
@@ -135,7 +214,9 @@ A registry that breaks every time you refactor is worse than no registry. `shame
 
 Reformatting a function or inserting imports above a suppression preserves the entry — `owner`, `created_at`, and `why` stay intact. Entries are only removed when the token itself is gone from the code.
 
-## Supported tokens
+## Supported languages
+
+> **shamefile is language-agnostic by design.** The list below reflects what has been wired up and tested so far — not a limit on what the engine can do. If your language is missing and there's no [open issue](https://github.com/BKDDFS/shamefile/issues?q=is%3Aissue+label%3Alanguage) for it, please [open one](https://github.com/BKDDFS/shamefile/issues/new?template=language_request.md) so we know there's interest.
 
 | Token | Tool | Language |
 |---|---|---|
@@ -156,41 +237,7 @@ Reformatting a function or inserting imports above a suppression preserves the e
 | `// @ts-ignore`, `/* @ts-ignore` | TypeScript | JS / TS / TSX |
 | `// @ts-expect-error`, `/* @ts-expect-error` | TypeScript | JS / TS / TSX |
 
-### Experimental tokens
-
-New languages added via the [*Add a language*](.github/ISSUE_TEMPLATE/language_request.md)
-template land here first. They have passed the existing test suite and
-a sanity run on a real codebase, but no real-world showcase has been
-contributed yet. Promotion to *Supported tokens* happens through the
-[*Verify and release a language*](.github/ISSUE_TEMPLATE/showcase_request.md) flow.
-
-| Language |
-|---|
-| |
-
 Supported file extensions: `.py`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`.
-
-## Installation
-
-| Source | Command |
-|---|---|
-| **npm** | `npm install -g shamefile` |
-| **PyPI** | `pip install shamefile` |
-| **crates.io** | `cargo install shamefile` |
-| **From source** | `cargo install --git https://github.com/BKDDFS/shamefile` |
-| **Homebrew** | _coming soon_ |
-
-All channels install the `shame` CLI. Run `shame --help` to verify.
-
-Or as a [pre-commit](https://pre-commit.com) hook:
-
-```yaml
-# .pre-commit-config.yaml
-- repo: https://github.com/BKDDFS/shamefile
-  rev: main
-  hooks:
-    - id: shamefile
-```
 
 ## Roadmap
 
@@ -202,21 +249,47 @@ Or as a [pre-commit](https://pre-commit.com) hook:
 
 ## FAQ
 
-**Why not just write the reason inline, like `# noqa: F401  # legacy import`?**
+<details>
+<summary><strong>Why not just write the reason inline, like <code># noqa: F401  # legacy import</code>?</strong></summary>
+
+<br>
 
 - **Reviewers don't see it.** A `# noqa` buried in one of seven changed files rarely gets pushback. `shamefile.yaml` puts every suppression in the PR into one diff — the reviewer sees the full cost as a single list, with author and `why` per entry.
 - **Nothing forces a reason.** Linters accept any string after the token, or none. `shame me . --dry-run` fails the build until every entry has a non-empty `why`. This matters most for AI coding agents, which lose the suppression's context the moment the session ends — the registry forces them to write the reason to disk while it still exists.
 - **Inline is a bad trade-off.** A short reason carries no information; a useful one drowns the line of code it is attached to. The registry keeps source readable and justifications detailed.
 
-**What stops developers from writing `why: 'TODO'` and moving on?**
+</details>
+
+<br>
+
+<details>
+<summary><strong>What stops developers from writing <code>why: 'TODO'</code> and moving on?</strong></summary>
+
+<br>
 
 The tool guarantees a string is written; the reviewer judges whether it is a real reason. If `why: 'TODO'` passes review, that is an organisational gap, not a tool gap — but the registry makes the gap visible: every lazy entry is one `grep` away, by author and date. Before `shamefile`, the same shortcut was hidden inside whichever file it lived in.
 
-**Won't `shamefile.yaml` become a merge conflict magnet on parallel PRs?**
+</details>
 
-The registry is sorted by `(location, token)`, so suppressions added in unrelated parts of the codebase land in different regions of the file — most parallel PRs do not collide. When they do, `shame me` is idempotent: after a merge, running it on the resolved tree deterministically reconciles entries from source, so `git checkout --theirs shamefile.yaml && shame me .` is the escape hatch. A custom git merge driver that resolves automatically is on the Roadmap. This is the same trade-off every shared-file tool (lockfiles, changelogs, schema migrations) has accepted in exchange for single-source-of-truth visibility.
+<br>
 
-**What about generated, vendored, or third-party code?**
+<details>
+<summary><strong>Won't <code>shamefile.yaml</code> become a merge conflict magnet on parallel PRs?</strong></summary>
+
+<br>
+
+This is the same trade-off every shared-file tool (lockfiles, changelogs, schema migrations) has accepted in exchange for single-source-of-truth visibility. A custom git merge driver that resolves automatically is on the Roadmap.
+
+The registry is sorted by `(location, token)`, so suppressions added in unrelated parts of the codebase land in different regions of the file — most parallel PRs do not collide. When they do, `shame me` is idempotent: after a merge, running it on the resolved tree deterministically reconciles entries from source, so `git checkout --theirs shamefile.yaml && shame me .` is the escape hatch.
+
+</details>
+
+<br>
+
+<details>
+<summary><strong>What about generated, vendored, or third-party code?</strong></summary>
+
+<br>
 
 A repo's typical generated/vendored content is excluded for free:
 
@@ -224,6 +297,8 @@ A repo's typical generated/vendored content is excluded for free:
 - Only `.py / .js / .jsx / .mjs / .cjs / .ts / .tsx` are scanned, so vendored content in any other language is silently ignored.
 
 A first-class `exclude:` config in `shamefile.yaml` is on the [Roadmap](#roadmap).
+
+</details>
 
 ## Contributing
 
@@ -236,3 +311,7 @@ Contributions are welcome. Where you start depends on what you have:
 - **Security vulnerability?** Use the private [advisory form](https://github.com/BKDDFS/shamefile/security/advisories/new) — see [SECURITY.md](SECURITY.md). **Do not** open a public issue.
 
 By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+
+shamefile is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for more information.
