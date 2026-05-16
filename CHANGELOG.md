@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.6](https://github.com/BKDDFS/shamefile/compare/v0.1.5...v0.1.6) - 2026-05-16
+
+### Other
+
+- *(readme)* hero banner, benefits section, compressed assets ([#73](https://github.com/BKDDFS/shamefile/pull/73))
+- cover non-Windows strip_registry_prefix_fallback ([#72](https://github.com/BKDDFS/shamefile/pull/72))
+
 ## [0.1.5](https://github.com/BKDDFS/shamefile/compare/v0.1.4...v0.1.5) - 2026-05-11
 
 ### Fixed
