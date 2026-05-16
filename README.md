@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/v1.1.jpg" alt="shamefile — force to document silenced linter" width="1280">
+  <img src="assets/banner.jpg" alt="shamefile — force to document silenced linter" width="1280">
 </p>
 
-<img src="assets/logo.png" alt="shamefile logo" width="180" align="left">
+<img src="assets/logo_beta.png" alt="shamefile logo" width="180" align="left">
 
 &nbsp;
 
@@ -77,11 +77,65 @@ Shamefile adds `shamefile.yaml` for the code reviewer and the `shame` CLI for th
   <img src="assets/code-review.jpg" alt="Reviewer rejects a weak justification on a shamefile entry" width="80%" />
 </p>
 
-## Why it's important
+## Why you should use it
 
-A mysterious `# noqa` with no explanation, left by a developer who moved on years ago. Nobody remembers why. Nobody wants to touch it. This is how legacy code accumulates — silently, one linter suppression at a time.
+<br>
 
-`shamefile` interrupts that pattern. Every suppression is tracked in a single `shamefile.yaml` — one file, one purpose. When it changes in a pull request, a reviewer sees the full cost of a shortcut in a single diff. And as AI coding agents become routine PR authors, the registry acts as a consistent gate: whether a suppression was introduced by a human or a model, it ships with a written justification or it doesn't ship at all.
+<img src="assets/benefit_single_source.png" alt="Single source of truth" width="140" align="left" hspace="20">
+
+### Single source of truth
+<sub>"Where to document?", "where to look?", "what to do?" — same answer to every question: `shamefile.yaml`.</sub>
+<br><br>
+<br clear="left">
+
+<br>
+
+<img src="assets/benefit_code_review.png" alt="Reviewable by design" width="115" align="right" hspace="20">
+
+### Reviewable by design
+<sub>Make suppression review a ritual, not goodwill.</sub>
+<br><br>
+<br clear="right">
+
+<br>
+
+<img src="assets/benefit_security.png" alt="Shamefile doesn't quit with ex-employees" width="115" align="left" hspace="20">
+
+### Shamefile doesn't quit with ex-employees
+<sub>Knowledge stays in the yaml and you can refactor with confidence.</sub>
+<br><br>
+<br clear="left">
+
+<br>
+
+<img src="assets/benefit_ai.png" alt="Instantly improves AI agents" width="140" align="right" hspace="20">
+
+### Instantly improves AI agents
+<sub>Ignoring warnings? Not so easy anymore. Triggers AI reflection — "is this really unfixable?". Measured effect on Claude, GPT, Cursor agents. Safer vibe coding by default.</sub>
+
+<br clear="all">
+
+## Installation
+
+| Source | Command |
+|---|---|
+| **npm** | `npm install -g shamefile` |
+| **PyPI** | `pip install shamefile` |
+| **crates.io** | `cargo install shamefile` |
+| **From source** | `cargo install --git https://github.com/BKDDFS/shamefile` |
+| **Homebrew** | _coming soon_ |
+
+All channels install the `shame` CLI. Run `shame --help` to verify.
+
+Or as a [pre-commit](https://pre-commit.com) hook:
+
+```yaml
+# .pre-commit-config.yaml
+- repo: https://github.com/BKDDFS/shamefile
+  rev: main
+  hooks:
+    - id: shamefile
+```
 
 ## Commands
 
@@ -184,28 +238,6 @@ contributed yet. Promotion to *Supported tokens* happens through the
 | |
 
 Supported file extensions: `.py`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.ts`, `.tsx`.
-
-## Installation
-
-| Source | Command |
-|---|---|
-| **npm** | `npm install -g shamefile` |
-| **PyPI** | `pip install shamefile` |
-| **crates.io** | `cargo install shamefile` |
-| **From source** | `cargo install --git https://github.com/BKDDFS/shamefile` |
-| **Homebrew** | _coming soon_ |
-
-All channels install the `shame` CLI. Run `shame --help` to verify.
-
-Or as a [pre-commit](https://pre-commit.com) hook:
-
-```yaml
-# .pre-commit-config.yaml
-- repo: https://github.com/BKDDFS/shamefile
-  rev: main
-  hooks:
-    - id: shamefile
-```
 
 ## Roadmap
 

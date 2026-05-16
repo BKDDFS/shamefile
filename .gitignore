@@ -17,3 +17,6 @@ node_modules/
 # Coverage artifacts
 *.profraw
 lcov.info
+
+# macOS
+.DS_Store
