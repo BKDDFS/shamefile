@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.7](https://github.com/BKDDFS/shamefile/compare/v0.1.6...v0.1.7) - 2026-05-17
+
+### Fixed
+
+- *(main)* render shame next snippet from registry, not disk ([#80](https://github.com/BKDDFS/shamefile/pull/80))
+
+### Other
+
+- bump ruff from 0.15.12 to 0.15.13 ([#77](https://github.com/BKDDFS/shamefile/pull/77))
+- bump taiki-e/install-action from 2.77.3 to 2.78.2 ([#76](https://github.com/BKDDFS/shamefile/pull/76))
+- bump release-plz/action from 0.5.128 to 0.5.129 ([#75](https://github.com/BKDDFS/shamefile/pull/75))
+- *(deps)* bump mako from 1.3.11 to 1.3.12 ([#81](https://github.com/BKDDFS/shamefile/pull/81))
+- bump github/codeql-action from 4.35.4 to 4.35.5 ([#78](https://github.com/BKDDFS/shamefile/pull/78))
+
 ### Security
 
 - Fix path traversal in `shame next` that allowed a crafted
