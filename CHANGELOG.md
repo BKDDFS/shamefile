@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Fix path traversal in `shame next` that allowed a crafted
+  `shamefile.yaml` entry to disclose one line of any file readable by the
+  current user. The snippet renderer no longer reads from disk; output is
+  rendered from the registry's cached `content` field instead. CWE-22.
+
 ## [0.1.6](https://github.com/BKDDFS/shamefile/compare/v0.1.5...v0.1.6) - 2026-05-16
 
 ### Other

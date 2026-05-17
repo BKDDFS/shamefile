@@ -68,8 +68,8 @@ def test_next_no_registry(tmp_path):
     assert "Registry not found" in result.stderr
 
 
-def test_next_snippet_handles_missing_source_file(tmp_path):
-    """Shame next should print location only when entry's source file is gone."""
+def test_next_snippet_renders_from_registry_when_source_file_missing(tmp_path):
+    """Snippet body comes from registry content, even when the source file is gone."""
     registry = tmp_path / "shamefile.yaml"
     registry.write_text(
         "---\n"
@@ -87,12 +87,11 @@ def test_next_snippet_handles_missing_source_file(tmp_path):
 
     assert result.returncode == 0
     assert "./gone.py:1" in result.stdout
-    # No snippet rendered because source file does not exist.
-    assert "    |" not in result.stdout
+    assert "   1| x = 1  # noqa" in result.stdout
 
 
-def test_next_snippet_handles_line_beyond_eof(tmp_path):
-    """Shame next should skip the snippet body when the line is past EOF."""
+def test_next_snippet_renders_registered_line_number_regardless_of_disk(tmp_path):
+    """Snippet uses the line number from the registry, not from the file on disk."""
     (tmp_path / "short.py").write_text("only_one_line = 1\n")
     registry = tmp_path / "shamefile.yaml"
     registry.write_text(
@@ -111,7 +110,7 @@ def test_next_snippet_handles_line_beyond_eof(tmp_path):
 
     assert result.returncode == 0
     assert "./short.py:99" in result.stdout
-    assert "    |" not in result.stdout
+    assert "  99| x" in result.stdout
 
 
 def test_next_with_reason_documents_entry(tmp_path):

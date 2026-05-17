@@ -698,22 +698,22 @@ fn find_registry_path() -> Result<PathBuf> {
     Ok(config_path)
 }
 
-fn print_entry_snippet(entry: &Entry, registry_dir: &Path) {
-    println!("{}", entry.location);
+fn print_entry_snippet(entry: &Entry) {
+    print!("{}", format_entry_snippet(entry));
+}
 
-    let file_path = registry_dir.join(entry.file());
-    if let Ok(source) = std::fs::read_to_string(&file_path) {
-        let line_num = entry.line() as usize;
-        if let Some(line) = source.lines().nth(line_num - 1) {
-            let trimmed = line.trim_start();
-            println!("    |");
-            println!("{:>4}| {}", line_num, trimmed);
-            if let Some(col) = trimmed.rfind(&entry.token) {
-                let underline = " ".repeat(col) + &"^".repeat(entry.token.len());
-                println!("    | {underline}");
-            }
-        }
+fn format_entry_snippet(entry: &Entry) -> String {
+    let mut out = format!("{}\n", entry.location);
+    if entry.content.is_empty() {
+        return out;
     }
+    out.push_str("    |\n");
+    out.push_str(&format!("{:>4}| {}\n", entry.line(), entry.content));
+    if let Some(col) = entry.content.rfind(&entry.token) {
+        let underline = " ".repeat(col) + &"^".repeat(entry.token.len());
+        out.push_str(&format!("    | {underline}\n"));
+    }
+    out
 }
 
 fn print_remaining(remaining: usize) {
@@ -735,7 +735,6 @@ fn handle_next(fix: Option<&str>) -> Result<()> {
 
     let config_path = find_registry_path()?;
     let mut registry = Registry::load(&config_path).context("Failed to load registry")?;
-    let registry_dir = config_path.parent().unwrap_or_else(|| Path::new("."));
 
     let entry_idx = registry
         .entries
@@ -769,7 +768,7 @@ fn handle_next(fix: Option<&str>) -> Result<()> {
                 .filter(|e| e.why.trim().is_empty())
                 .count();
             println!("{} remaining.\n", remaining);
-            print_entry_snippet(&registry.entries[next], registry_dir);
+            print_entry_snippet(&registry.entries[next]);
             println!(
                 "\nFix with:\n  shame next \"<reason>\"\n  shame fix \"{}\" \"{}\" --why \"<reason>\"",
                 registry.entries[next].location, registry.entries[next].token
@@ -778,7 +777,7 @@ fn handle_next(fix: Option<&str>) -> Result<()> {
             print_remaining(0);
         }
     } else {
-        print_entry_snippet(&registry.entries[idx], registry_dir);
+        print_entry_snippet(&registry.entries[idx]);
         println!(
             "\nFix with:\n  shame next \"<reason>\"\n  shame fix \"{}\" \"{}\" --why \"<reason>\"",
             registry.entries[idx].location, registry.entries[idx].token
@@ -1037,5 +1036,40 @@ mod tests {
             &scan_paths,
             &registry_dir,
         ));
+    }
+
+    #[test]
+    fn format_entry_snippet_renders_location_and_content_line() {
+        let e = entry("./src/foo.py:42", "# noqa", "x = 1  # noqa");
+        let out = format_entry_snippet(&e);
+        assert!(out.contains("./src/foo.py:42"));
+        assert!(out.contains("  42| x = 1  # noqa"));
+    }
+
+    #[test]
+    fn format_entry_snippet_uses_content_field_not_filesystem() {
+        let e = entry("/etc/passwd:1", "# noqa", "REGISTRY_CACHED_LINE");
+        let out = format_entry_snippet(&e);
+        assert!(out.contains("/etc/passwd:1"));
+        assert!(out.contains("REGISTRY_CACHED_LINE"));
+        assert!(!out.contains("root:"));
+    }
+
+    #[test]
+    fn format_entry_snippet_underline_aligns_with_token_column() {
+        let line = "x = 1  # noqa";
+        let token = "# noqa";
+        let e = entry("./a.py:1", token, line);
+        let out = format_entry_snippet(&e);
+        let col = line.find(token).unwrap();
+        let expected_underline = format!("    | {}{}", " ".repeat(col), "^".repeat(token.len()));
+        assert!(out.contains(&expected_underline));
+    }
+
+    #[test]
+    fn format_entry_snippet_omits_body_when_content_empty() {
+        let e = entry("./a.py:1", "# noqa", "");
+        let out = format_entry_snippet(&e);
+        assert_eq!(out, "./a.py:1\n");
     }
 }
