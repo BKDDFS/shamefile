@@ -40,14 +40,12 @@ fn cascade_match(
         if v2e[vi].is_some() {
             continue;
         }
-        let v_file = v.path.to_string_lossy();
+        let v_file = v.path.to_string_lossy().replace('\\', "/");
         let v_hash = content_hash(&v.line_content);
         if let Some(oi) = old_entries.iter().enumerate().find_map(|(i, e)| {
             if e2v[i].is_none() && e.content == v_hash && e.token == v.matched_token {
-                let file_matches = e.file() == v_file.as_ref()
-                    || renames
-                        .get(e.file())
-                        .is_some_and(|new| new == v_file.as_ref());
+                let file_matches =
+                    e.file() == v_file || renames.get(e.file()).is_some_and(|new| *new == v_file);
                 if file_matches { Some(i) } else { None }
             } else {
                 None
@@ -926,6 +924,28 @@ mod tests {
         let violations = vec![violation("./a.py", 1, "x = 1  # noqa", "# noqa")];
         let m = cascade_match(&entries, &violations, &HashMap::new());
         assert_eq!(m.violation_to_entry, vec![None]);
+    }
+
+    #[test]
+    fn cascade_match_pass_b_normalizes_backslash_in_violation_path() {
+        let entries = vec![entry("./a/b.py:10", "# noqa", "x = 1  # noqa")];
+        let mut v = violation("./a/b.py", 12, "x = 1  # noqa", "# noqa");
+        v.path = PathBuf::from(r"./a\b.py");
+        let violations = vec![v];
+        let m = cascade_match(&entries, &violations, &HashMap::new());
+        assert_eq!(m.violation_to_entry, vec![Some(0)]);
+    }
+
+    #[test]
+    fn cascade_match_pass_b_normalizes_backslash_for_rename_lookup() {
+        let entries = vec![entry("./old.py:10", "# noqa", "x = 1  # noqa")];
+        let mut v = violation("./new.py", 10, "x = 1  # noqa", "# noqa");
+        v.path = PathBuf::from(r".\new.py");
+        let violations = vec![v];
+        let mut renames = HashMap::new();
+        renames.insert("./old.py".to_string(), "./new.py".to_string());
+        let m = cascade_match(&entries, &violations, &renames);
+        assert_eq!(m.violation_to_entry, vec![Some(0)]);
     }
 
     #[test]
