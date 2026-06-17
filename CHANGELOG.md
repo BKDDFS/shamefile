@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.8](https://github.com/BKDDFS/shamefile/compare/v0.1.7...v0.1.8) - 2026-06-17
+
+### Other
+
+- bump regex from 1.12.3 to 1.12.4 ([#98](https://github.com/BKDDFS/shamefile/pull/98))
+- bump release-plz/action from 0.5.129 to 0.5.130 ([#99](https://github.com/BKDDFS/shamefile/pull/99))
+- bump pytest from 9.0.3 to 9.1.0 ([#101](https://github.com/BKDDFS/shamefile/pull/101))
+- bump taiki-e/install-action from 2.80.0 to 2.81.10 ([#100](https://github.com/BKDDFS/shamefile/pull/100))
+- bump ruff from 0.15.16 to 0.15.17 ([#102](https://github.com/BKDDFS/shamefile/pull/102))
+- bump regex-syntax from 0.8.10 to 0.8.11 ([#103](https://github.com/BKDDFS/shamefile/pull/103))
+- bump ruff from 0.15.15 to 0.15.16 ([#95](https://github.com/BKDDFS/shamefile/pull/95))
+- bump github/codeql-action from 4.36.0 to 4.36.2 ([#96](https://github.com/BKDDFS/shamefile/pull/96))
+- bump taiki-e/install-action from 2.79.6 to 2.80.0 ([#88](https://github.com/BKDDFS/shamefile/pull/88))
+- bump ruff from 0.15.14 to 0.15.15 ([#89](https://github.com/BKDDFS/shamefile/pull/89))
+- bump SonarSource/sonarqube-scan-action from 8.0.0 to 8.1.0 ([#86](https://github.com/BKDDFS/shamefile/pull/86))
+- bump ruff from 0.15.13 to 0.15.14 ([#84](https://github.com/BKDDFS/shamefile/pull/84))
+- bump github/codeql-action from 4.35.5 to 4.36.0 ([#82](https://github.com/BKDDFS/shamefile/pull/82))
+- bump taiki-e/install-action from 2.78.2 to 2.79.6 ([#85](https://github.com/BKDDFS/shamefile/pull/85))
+
 ## [0.1.7](https://github.com/BKDDFS/shamefile/compare/v0.1.6...v0.1.7) - 2026-05-17
 
 ### Fixed
